@@ -1,6 +1,8 @@
 const STORAGE_KEY = "jin-diary-entries";
 const SETTINGS_KEY = "jin-diary-settings";
-const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxm3Xl3yw01-m_qAgJFxz3orQ8Nfu2RvhsymrX3fcfYeWtlGXFB9GKEvLaSUZ-xovHH/exec";
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywIWTWnpCDGlCDRJ0aNNnWUw-rz72KpgXL9lwdWYWPem-sRbE0_bu0XfV2NaiCvqPi/exec";
+const APP_TIME_ZONE = "Asia/Bangkok";
+const BANGKOK_OFFSET = "+07:00";
 
 const scriptTemplate = `const SHEET_NAME = "entries";
 
@@ -35,9 +37,13 @@ function appendEntry(params) {
     entry.amount,
     entry.unit,
     entry.note,
-    new Date().toISOString()
+    entry.createdAt || bangkokTimestamp()
   ]);
   return { ok: true, entry };
+}
+
+function bangkokTimestamp() {
+  return Utilities.formatDate(new Date(), "Asia/Bangkok", "yyyy-MM-dd'T'HH:mm:ss") + "+07:00";
 }
 
 function listEntries() {
@@ -125,16 +131,38 @@ function configureLocalOnlyUi() {
 }
 
 function localDateTimeValue(date = new Date()) {
-  const offsetMs = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+  return bangkokDateTimeParts(date).inputValue;
 }
 
 function parseLocalInput(value) {
-  return new Date(value).toISOString();
+  return `${value}:00${BANGKOK_OFFSET}`;
+}
+
+function currentBangkokTimestamp() {
+  return `${localDateTimeValue()}:00${BANGKOK_OFFSET}`;
+}
+
+function bangkokDateTimeParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    inputValue: `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`,
+  };
 }
 
 function formatTime(value) {
   return new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -143,6 +171,7 @@ function formatTime(value) {
 
 function formatDay(value) {
   return new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIME_ZONE,
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -150,7 +179,7 @@ function formatDay(value) {
 }
 
 function dayKey(value) {
-  return localDateTimeValue(new Date(value)).slice(0, 10);
+  return bangkokDateTimeParts(new Date(value)).date;
 }
 
 function activityLabel(type) {
@@ -187,7 +216,9 @@ function renderStatus(message) {
   const text = message || (invalidUrl ? "Need /exec URL" : hasUrl ? "Sheet ready" : "Local only");
   els.syncStatuses.forEach((status) => {
     status.textContent = text;
-    status.classList.toggle("online", hasUrl && !invalidUrl);
+    status.classList.toggle("online", text === "Synced");
+    status.classList.toggle("pending", hasUrl && !invalidUrl && text !== "Synced" && !text.toLowerCase().includes("failed"));
+    status.classList.toggle("error", text.toLowerCase().includes("failed") || invalidUrl);
   });
 }
 
@@ -314,6 +345,7 @@ function createEntry() {
     amount: els.amount.value === "" ? "" : Number(els.amount.value),
     unit: els.unit.value,
     note: els.note.value.trim(),
+    createdAt: currentBangkokTimestamp(),
   };
 }
 
@@ -485,7 +517,7 @@ function loadSampleDay() {
 
   entries = samples.map(([time, type, amount, unit, note]) => ({
     id: crypto.randomUUID(),
-    happenedAt: new Date(`${datePart}T${time}`).toISOString(),
+    happenedAt: parseLocalInput(`${datePart}T${time}`),
     type,
     amount,
     unit,

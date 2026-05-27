@@ -3,7 +3,7 @@
   --ink: #17202a;
   --muted: #66727f;
   --line: #d9e0e6;
-  --panel: rgba(255, 255, 255, 0.8);
+  --panel: rgba(255, 255, 255, 0.44);
   --page: #2b2824;
   --photo: url("assets/jin-background.jpg");
   --orange: #f47c20;
@@ -35,7 +35,7 @@ body::before {
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(90deg, rgba(18, 17, 14, 0.4), rgba(18, 17, 14, 0.12)),
+    linear-gradient(90deg, rgba(18, 17, 14, 0.24), rgba(18, 17, 14, 0.06)),
     var(--photo) center / cover no-repeat;
   content: "";
   pointer-events: none;
@@ -45,7 +45,7 @@ body::after {
   position: fixed;
   inset: 0;
   z-index: 0;
-  background: rgba(246, 248, 245, 0.04);
+  background: transparent;
   content: "";
   pointer-events: none;
 }
@@ -137,9 +137,9 @@ h2 {
 }
 
 .status-pill {
-  border: 1px solid rgba(255, 255, 255, 0.36);
+  border: 1px solid rgba(255, 255, 255, 0.46);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.7);
   color: #374151;
   font-size: 13px;
   font-weight: 800;
@@ -148,9 +148,21 @@ h2 {
 }
 
 .status-pill.online {
+  border-color: #8fd9aa;
+  background: #ecfff2;
+  color: #08713b;
+}
+
+.status-pill.pending {
   border-color: #ffbe82;
   background: var(--orange-soft);
   color: var(--orange-dark);
+}
+
+.status-pill.error {
+  border-color: #efc8c4;
+  background: #fff4f3;
+  color: var(--danger);
 }
 
 .tabs {
@@ -160,8 +172,8 @@ h2 {
 }
 
 .tab {
-  border-color: rgba(255, 255, 255, 0.36);
-  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.56);
   color: #374151;
 }
 
@@ -182,11 +194,13 @@ h2 {
 .entry-panel,
 .log-panel,
 .settings-panel {
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 8px;
-  background: var(--panel);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.24)),
+    var(--panel);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(9px);
+  backdrop-filter: blur(1px);
   padding: 16px;
 }
 
@@ -251,8 +265,16 @@ button:focus {
   gap: 10px;
 }
 
+.section-title {
+  position: relative;
+  width: 100%;
+  padding-right: 130px;
+}
+
 .today-status {
-  align-self: center;
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .timeline {
@@ -269,7 +291,7 @@ button:focus {
   border: 1px solid var(--line);
   border-left: 5px solid var(--orange);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.74);
   padding: 10px;
 }
 
@@ -330,11 +352,13 @@ button:focus {
 }
 
 .day-card {
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 8px;
-  background: var(--panel);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.24)),
+    var(--panel);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.13);
-  backdrop-filter: blur(9px);
+  backdrop-filter: blur(1px);
   padding: 15px;
 }
 
@@ -353,7 +377,7 @@ button:focus {
 .metric {
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: rgba(249, 251, 252, 0.86);
+  background: rgba(249, 251, 252, 0.68);
   padding: 10px;
 }
 
@@ -426,7 +450,7 @@ pre {
 @media (max-width: 720px) {
   body::before {
     background:
-      linear-gradient(180deg, rgba(18, 17, 14, 0.32), rgba(18, 17, 14, 0.12)),
+      linear-gradient(180deg, rgba(18, 17, 14, 0.18), rgba(18, 17, 14, 0.04)),
       var(--photo) center top / cover no-repeat;
   }
 
@@ -439,6 +463,11 @@ pre {
   .section-header {
     align-items: start;
     flex-direction: column;
+  }
+
+  .section-title {
+    min-height: 58px;
+    padding-right: 128px;
   }
 
   .section-actions {
@@ -459,8 +488,10 @@ pre {
   .log-panel,
   .settings-panel,
   .day-card {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(7px);
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)),
+      rgba(255, 255, 255, 0.32);
+    backdrop-filter: blur(0.5px);
   }
 
   .form-actions {

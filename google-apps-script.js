@@ -31,9 +31,13 @@ function appendEntry(params) {
     entry.amount,
     entry.unit,
     entry.note,
-    new Date().toISOString(),
+    entry.createdAt || bangkokTimestamp(),
   ]);
   return { ok: true, entry };
+}
+
+function bangkokTimestamp() {
+  return Utilities.formatDate(new Date(), "Asia/Bangkok", "yyyy-MM-dd'T'HH:mm:ss") + "+07:00";
 }
 
 function listEntries() {
