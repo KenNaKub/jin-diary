@@ -105,7 +105,7 @@ const els = {
   todayTimeline: document.querySelector("#todayTimeline"),
   todayLabel: document.querySelector("#todayLabel"),
   dayGrid: document.querySelector("#dayGrid"),
-  syncStatus: document.querySelector("#syncStatus"),
+  syncStatuses: document.querySelectorAll(".sync-status"),
   scriptUrl: document.querySelector("#scriptUrl"),
   saveSettingsButton: document.querySelector("#saveSettingsButton"),
   syncButton: document.querySelector("#syncButton"),
@@ -184,8 +184,11 @@ function render() {
 function renderStatus(message) {
   const hasUrl = Boolean(settings.scriptUrl);
   const invalidUrl = hasUrl && isGoogleusercontentUrl(settings.scriptUrl);
-  els.syncStatus.textContent = message || (invalidUrl ? "Need /exec URL" : hasUrl ? "Sheet ready" : "Local only");
-  els.syncStatus.classList.toggle("online", hasUrl && !invalidUrl);
+  const text = message || (invalidUrl ? "Need /exec URL" : hasUrl ? "Sheet ready" : "Local only");
+  els.syncStatuses.forEach((status) => {
+    status.textContent = text;
+    status.classList.toggle("online", hasUrl && !invalidUrl);
+  });
 }
 
 function renderToday() {

@@ -3,7 +3,7 @@
   --ink: #17202a;
   --muted: #66727f;
   --line: #d9e0e6;
-  --panel: rgba(255, 255, 255, 0.9);
+  --panel: rgba(255, 255, 255, 0.8);
   --page: #2b2824;
   --photo: url("assets/jin-background.jpg");
   --orange: #f47c20;
@@ -26,7 +26,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(90deg, rgba(18, 17, 14, 0.56), rgba(18, 17, 14, 0.22)),
+    linear-gradient(90deg, rgba(18, 17, 14, 0.4), rgba(18, 17, 14, 0.12)),
     var(--photo) center / cover fixed,
     var(--page);
   color: var(--ink);
@@ -37,7 +37,7 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: rgba(246, 248, 245, 0.14);
+  background: rgba(246, 248, 245, 0.04);
   content: "";
 }
 
@@ -174,8 +174,8 @@ h2 {
   border: 1px solid rgba(255, 255, 255, 0.38);
   border-radius: 8px;
   background: var(--panel);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(9px);
   padding: 16px;
 }
 
@@ -202,6 +202,7 @@ label {
 
 input,
 select {
+  min-width: 0;
   width: 100%;
   height: 42px;
   border: 1px solid var(--line);
@@ -239,6 +240,10 @@ button:focus {
   gap: 10px;
 }
 
+.today-status {
+  align-self: center;
+}
+
 .timeline {
   display: grid;
   gap: 10px;
@@ -253,7 +258,7 @@ button:focus {
   border: 1px solid var(--line);
   border-left: 5px solid var(--orange);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.84);
   padding: 10px;
 }
 
@@ -317,8 +322,8 @@ button:focus {
   border: 1px solid rgba(255, 255, 255, 0.38);
   border-radius: 8px;
   background: var(--panel);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.16);
-  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.13);
+  backdrop-filter: blur(9px);
   padding: 15px;
 }
 
@@ -410,7 +415,7 @@ pre {
 @media (max-width: 720px) {
   body {
     background:
-      linear-gradient(180deg, rgba(18, 17, 14, 0.54), rgba(18, 17, 14, 0.24)),
+      linear-gradient(180deg, rgba(18, 17, 14, 0.32), rgba(18, 17, 14, 0.12)),
       var(--photo) center top / cover fixed,
       var(--page);
   }
@@ -437,6 +442,29 @@ pre {
 
   .entry-panel {
     grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .entry-panel,
+  .log-panel,
+  .settings-panel,
+  .day-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(7px);
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-actions button {
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .form-actions #sampleButton {
+    grid-column: 1 / -1;
   }
 
   .span-2,
@@ -456,5 +484,12 @@ pre {
   .timeline-item {
     grid-template-columns: 58px minmax(0, 1fr) 38px;
     gap: 8px;
+  }
+
+  input[type="datetime-local"] {
+    appearance: none;
+    font-size: 16px;
+    max-width: 100%;
+    min-width: 0;
   }
 }

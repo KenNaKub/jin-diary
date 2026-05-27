@@ -13,7 +13,7 @@
           <p class="eyebrow">Jin Diary</p>
           <h1>Baby activity log</h1>
         </div>
-        <div class="status-pill" id="syncStatus">Local only</div>
+        <div class="status-pill sync-status">Local only</div>
       </header>
 
       <nav class="tabs" aria-label="Views">
@@ -64,7 +64,7 @@
           </label>
 
           <div class="form-actions span-4">
-            <button type="submit">Save activity</button>
+            <button type="submit">Save</button>
             <button class="secondary" id="nowButton" type="button">Use now</button>
             <button class="secondary" id="sampleButton" type="button">Load sample day</button>
           </div>
@@ -76,8 +76,9 @@
               <h2>Today</h2>
               <p id="todayLabel">No entries yet</p>
             </div>
+            <div class="status-pill sync-status today-status">Local only</div>
             <div class="section-actions">
-              <button id="syncMainButton" type="button">Sync with sheet</button>
+              <button id="syncMainButton" type="button">Refresh from sheet</button>
               <button class="danger" id="clearLocalButton" type="button">Clear local</button>
             </div>
           </div>
@@ -91,7 +92,7 @@
             <h2>Daily summary</h2>
             <p>Totals and timeline grouped by day.</p>
           </div>
-          <button id="refreshButton" type="button">Refresh</button>
+          <button id="refreshButton" type="button">Refresh from sheet</button>
         </div>
         <div class="day-grid" id="dayGrid"></div>
       </section>
