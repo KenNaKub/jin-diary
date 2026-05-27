@@ -23,6 +23,8 @@ After changing `google-apps-script.js`, create a new Apps Script deployment vers
 
 `Sync with sheet` uploads local-only entries first, then reloads the final data from the sheet.
 
+The Sheet settings tab is visible only during local testing. It is hidden automatically on GitHub Pages.
+
 ## Background image
 
 The page background is loaded from `assets/jin-background.jpg`.

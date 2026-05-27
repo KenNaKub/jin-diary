@@ -113,6 +113,17 @@ const els = {
   timelineTemplate: document.querySelector("#timelineItemTemplate"),
 };
 
+function isLocalTestHost(hostname = window.location.hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "";
+}
+
+function configureLocalOnlyUi() {
+  if (isLocalTestHost()) return;
+
+  document.querySelector('[data-view-button="settings"]')?.setAttribute("hidden", "");
+  document.querySelector('[data-view="settings"]')?.setAttribute("hidden", "");
+}
+
 function localDateTimeValue(date = new Date()) {
   const offsetMs = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
@@ -553,5 +564,6 @@ els.syncButton.addEventListener("click", () => {
 els.happenedAt.value = localDateTimeValue();
 els.scriptUrl.value = settings.scriptUrl || "";
 els.scriptSnippet.textContent = scriptTemplate;
+configureLocalOnlyUi();
 render();
 syncFromSheet().catch(() => renderStatus("Sync failed"));
