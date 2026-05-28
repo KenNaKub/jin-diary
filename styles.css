@@ -590,6 +590,17 @@ pre {
     grid-column: 1 / -1;
   }
 
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    font-size: 16px;
+  }
+
   .span-2,
   .span-4 {
     grid-column: span 1;
