@@ -1,4 +1,4 @@
-# Jin Diary
+# JINN DIARY
 
 A static baby activity diary for GitHub Pages, with optional Google Sheets storage through Google Apps Script.
 

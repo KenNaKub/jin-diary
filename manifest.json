@@ -1,0 +1,23 @@
+{
+  "name": "JINN DIARY",
+  "short_name": "JINN DIARY",
+  "description": "Baby activity log for Jin.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#2b2824",
+  "theme_color": "#f47c20",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
