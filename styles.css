@@ -136,30 +136,37 @@ h2 {
   font-size: 14px;
 }
 
-.status-pill {
+.sync-badge {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 10;
   border: 1px solid rgba(255, 255, 255, 0.46);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.76);
   color: #374151;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  padding: 8px 12px;
+  line-height: 1;
+  padding: 7px 9px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   white-space: nowrap;
+  backdrop-filter: blur(4px);
 }
 
-.status-pill.online {
+.sync-badge.online {
   border-color: #8fd9aa;
   background: #ecfff2;
   color: #08713b;
 }
 
-.status-pill.pending {
+.sync-badge.pending {
   border-color: #ffbe82;
   background: var(--orange-soft);
   color: var(--orange-dark);
 }
 
-.status-pill.error {
+.sync-badge.error {
   border-color: #efc8c4;
   background: #fff4f3;
   color: var(--danger);
@@ -244,6 +251,17 @@ button:focus {
   outline: 3px solid var(--focus);
 }
 
+.datetime-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.compact-now {
+  min-width: 66px;
+  padding: 0 12px;
+}
+
 .span-2 {
   grid-column: span 2;
 }
@@ -263,18 +281,6 @@ button:focus {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
-}
-
-.section-title {
-  position: relative;
-  width: 100%;
-  padding-right: 130px;
-}
-
-.today-status {
-  position: absolute;
-  top: 0;
-  right: 0;
 }
 
 .timeline {
@@ -351,6 +357,80 @@ button:focus {
   margin-top: 14px;
 }
 
+.chart-panel {
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.24)),
+    var(--panel);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.13);
+  backdrop-filter: blur(1px);
+  padding: 14px;
+}
+
+.chart-panel summary,
+.day-details summary {
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.chart-controls {
+  display: inline-flex;
+  gap: 6px;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 4px;
+}
+
+.chart-toggle {
+  min-height: 34px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.chart-toggle.is-active {
+  border-color: #b9570d;
+  background: var(--orange);
+  color: #2b1403;
+}
+
+.bar-chart {
+  display: grid;
+  gap: 10px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 74px;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.bar-track {
+  height: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.bar-fill {
+  min-width: 4px;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--orange);
+}
+
+.bar-row strong {
+  color: var(--ink);
+  text-align: right;
+}
+
 .day-card {
   border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 8px;
@@ -405,6 +485,7 @@ button:focus {
 .compact-list {
   display: grid;
   gap: 6px;
+  margin-top: 10px;
   color: var(--muted);
   font-size: 14px;
 }
@@ -465,9 +546,9 @@ pre {
     flex-direction: column;
   }
 
-  .section-title {
-    min-height: 58px;
-    padding-right: 128px;
+  .sync-badge {
+    font-size: 11px;
+    padding: 6px 8px;
   }
 
   .section-actions {
@@ -504,6 +585,7 @@ pre {
     padding: 0 10px;
   }
 
+  .form-actions button[type="submit"],
   .form-actions #sampleButton {
     grid-column: 1 / -1;
   }
@@ -532,5 +614,14 @@ pre {
     font-size: 16px;
     max-width: 100%;
     min-width: 0;
+  }
+
+  .bar-row {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+
+  .bar-row strong {
+    grid-column: 2;
+    text-align: left;
   }
 }

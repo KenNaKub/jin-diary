@@ -7,13 +7,13 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="sync-badge sync-status">Local only</div>
     <main class="app-shell">
       <header class="topbar">
         <div>
           <p class="eyebrow">Jin Diary</p>
           <h1>Baby activity log</h1>
         </div>
-        <div class="status-pill sync-status">Local only</div>
       </header>
 
       <nav class="tabs" aria-label="Views">
@@ -39,7 +39,10 @@
 
           <label class="span-2">
             <span>Date and time</span>
-            <input id="happenedAt" type="datetime-local" required />
+            <div class="datetime-row">
+              <input id="happenedAt" type="datetime-local" required />
+              <button class="secondary compact-now" id="nowButton" type="button">Now</button>
+            </div>
           </label>
 
           <label>
@@ -65,7 +68,6 @@
 
           <div class="form-actions span-4">
             <button type="submit">Save</button>
-            <button class="secondary" id="nowButton" type="button">Use now</button>
             <button class="secondary" id="sampleButton" type="button">Load sample day</button>
           </div>
         </form>
@@ -75,7 +77,6 @@
             <div class="section-title">
               <h2>Today</h2>
               <p id="todayLabel">No entries yet</p>
-              <div class="status-pill sync-status today-status">Local only</div>
             </div>
             <div class="section-actions">
               <button id="syncMainButton" type="button">Manual refresh</button>
@@ -94,6 +95,14 @@
           </div>
           <button id="refreshButton" type="button">Manual refresh</button>
         </div>
+        <details class="chart-panel" open>
+          <summary>Milk chart</summary>
+          <div class="chart-controls" aria-label="Chart metric">
+            <button class="chart-toggle is-active" type="button" data-chart-type="feed">Feed</button>
+            <button class="chart-toggle" type="button" data-chart-type="pump">Pump</button>
+          </div>
+          <div class="bar-chart" id="summaryChart"></div>
+        </details>
         <div class="day-grid" id="dayGrid"></div>
       </section>
 

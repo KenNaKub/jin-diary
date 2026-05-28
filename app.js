@@ -93,6 +93,7 @@ function respond(payload, callback) {
 
 let entries = loadEntries();
 let settings = loadSettings();
+let chartType = "feed";
 
 const els = {
   tabs: document.querySelectorAll("[data-view-button]"),
@@ -111,6 +112,8 @@ const els = {
   todayTimeline: document.querySelector("#todayTimeline"),
   todayLabel: document.querySelector("#todayLabel"),
   dayGrid: document.querySelector("#dayGrid"),
+  summaryChart: document.querySelector("#summaryChart"),
+  chartToggles: document.querySelectorAll("[data-chart-type]"),
   syncStatuses: document.querySelectorAll(".sync-status"),
   scriptUrl: document.querySelector("#scriptUrl"),
   saveSettingsButton: document.querySelector("#saveSettingsButton"),
@@ -128,6 +131,7 @@ function configureLocalOnlyUi() {
 
   document.querySelector('[data-view-button="settings"]')?.setAttribute("hidden", "");
   document.querySelector('[data-view="settings"]')?.setAttribute("hidden", "");
+  els.sampleButton?.setAttribute("hidden", "");
 }
 
 function localDateTimeValue(date = new Date()) {
@@ -258,9 +262,12 @@ function renderSummary() {
   els.dayGrid.replaceChildren();
 
   if (!groups.length) {
+    renderSummaryChart([]);
     els.dayGrid.append(emptyState("Daily cards appear after you save activities."));
     return;
   }
+
+  renderSummaryChart(groups);
 
   groups.forEach(([key, dayEntries]) => {
     const metrics = calculateDay(dayEntries);
@@ -270,11 +277,14 @@ function renderSummary() {
       <h3>${formatDay(dayEntries[0].happenedAt)}</h3>
       <div class="metrics">
         <div class="metric"><span>Feed</span><strong>${metrics.feed.count}</strong><small>${metrics.feed.amount}</small></div>
-        <div class="metric"><span>Pump total</span><strong>${metrics.pump}</strong></div>
+        <div class="metric"><span>Pump</span><strong>${metrics.pump.count}</strong><small>${metrics.pump.amount}</small></div>
         <div class="metric"><span>Breast</span><strong>${metrics.breast.count}</strong><small>${metrics.breast.amount}</small></div>
         <div class="metric"><span>Weight</span><strong>${metrics.weight}</strong></div>
       </div>
-      <div class="compact-list"></div>
+      <details class="day-details">
+        <summary>Details</summary>
+        <div class="compact-list"></div>
+      </details>
     `;
 
     const list = card.querySelector(".compact-list");
@@ -292,6 +302,45 @@ function renderSummary() {
   });
 }
 
+function renderSummaryChart(groups) {
+  if (!els.summaryChart) return;
+  els.chartToggles.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.chartType === chartType);
+  });
+
+  els.summaryChart.replaceChildren();
+  if (!groups.length) {
+    els.summaryChart.append(emptyState("Chart appears after you save activities."));
+    return;
+  }
+
+  const rows = groups
+    .map(([key, dayEntries]) => {
+      const total = sumEntries(dayEntries, chartType);
+      const unit = unitFor(dayEntries, chartType, "oz");
+      return {
+        key,
+        label: formatDay(dayEntries[0].happenedAt),
+        total,
+        unit,
+      };
+    })
+    .reverse();
+  const max = Math.max(...rows.map((row) => row.total), 1);
+
+  rows.forEach((row) => {
+    const item = document.createElement("div");
+    item.className = "bar-row";
+    const value = formatMetric(row.total, row.unit);
+    item.innerHTML = `
+      <span>${row.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width: ${(row.total / max) * 100}%"></div></div>
+      <strong>${value}</strong>
+    `;
+    els.summaryChart.append(item);
+  });
+}
+
 function groupByDay(items) {
   const groups = new Map();
   items.forEach((entry) => {
@@ -304,18 +353,24 @@ function groupByDay(items) {
 
 function calculateDay(items) {
   const entriesFor = (type) => items.filter((entry) => entry.type === type);
-  const sum = (type) => items
-    .filter((entry) => entry.type === type)
-    .reduce((total, entry) => total + Number(entry.amount || 0), 0);
-  const unitFor = (type, fallback) => items.find((entry) => entry.type === type && entry.unit)?.unit || fallback;
   const weight = items.filter((entry) => entry.type === "weight").at(-1);
 
   return {
-    feed: countAndAmount(entriesFor("feed"), sum("feed"), unitFor("feed", "oz")),
-    pump: formatMetric(sum("pump"), unitFor("pump", "oz")),
-    breast: countAndAmount(entriesFor("breast"), sum("breast"), unitFor("breast", "oz")),
+    feed: countAndAmount(entriesFor("feed"), sumEntries(items, "feed"), unitFor(items, "feed", "oz")),
+    pump: countAndAmount(entriesFor("pump"), sumEntries(items, "pump"), unitFor(items, "pump", "oz")),
+    breast: countAndAmount(entriesFor("breast"), sumEntries(items, "breast"), unitFor(items, "breast", "oz")),
     weight: weight ? amountLabel(weight) : "-",
   };
+}
+
+function sumEntries(items, type) {
+  return items
+    .filter((entry) => entry.type === type)
+    .reduce((total, entry) => total + Number(entry.amount || 0), 0);
+}
+
+function unitFor(items, type, fallback) {
+  return items.find((entry) => entry.type === type && entry.unit)?.unit || fallback;
 }
 
 function countAndAmount(items, totalAmount, unit) {
@@ -346,6 +401,7 @@ function createEntry() {
     unit: els.unit.value,
     note: els.note.value.trim(),
     createdAt: currentBangkokTimestamp(),
+    pendingSync: true,
   };
 }
 
@@ -448,12 +504,13 @@ async function syncFromSheet() {
   if (payload.ok && Array.isArray(payload.entries)) {
     const sheetEntries = payload.entries.map(normalizeEntry);
     const sheetIds = new Set(sheetEntries.map((entry) => entry.id));
-    const localOnlyEntries = entries.filter((entry) => entry.id && !sheetIds.has(entry.id));
+    const localOnlyEntries = entries.filter((entry) => entry.pendingSync && entry.id && !sheetIds.has(entry.id));
 
     if (localOnlyEntries.length) {
       renderStatus(`Uploading ${localOnlyEntries.length} local ${localOnlyEntries.length === 1 ? "entry" : "entries"}...`);
       for (const entry of localOnlyEntries) {
-        const saved = await appendToSheet(entry, { showStatus: false });
+        const { pendingSync, ...entryForSheet } = entry;
+        const saved = await appendToSheet(entryForSheet, { showStatus: false });
         if (!saved) {
           renderStatus("Sync failed");
           return false;
@@ -489,6 +546,7 @@ function normalizeEntry(entry) {
     amount: entry.amount === "" || entry.amount == null ? "" : Number(entry.amount),
     unit: entry.unit || "",
     note: entry.note || "",
+    pendingSync: false,
   };
 }
 
@@ -522,6 +580,7 @@ function loadSampleDay() {
     amount,
     unit,
     note,
+    pendingSync: false,
   }));
   saveEntries();
   render();
@@ -571,6 +630,13 @@ els.nowButton.addEventListener("click", () => {
 });
 
 els.sampleButton.addEventListener("click", loadSampleDay);
+
+els.chartToggles.forEach((button) => {
+  button.addEventListener("click", () => {
+    chartType = button.dataset.chartType;
+    renderSummary();
+  });
+});
 
 els.syncMainButton.addEventListener("click", () => {
   syncFromSheet().catch(() => renderStatus("Sync failed"));
