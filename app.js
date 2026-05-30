@@ -314,31 +314,54 @@ function renderSummaryChart(groups) {
     return;
   }
 
-  const rows = groups
-    .map(([key, dayEntries]) => {
-      const total = sumEntries(dayEntries, chartType);
-      const unit = unitFor(dayEntries, chartType, "oz");
-      return {
-        key,
-        label: formatDay(dayEntries[0].happenedAt),
-        total,
-        unit,
-      };
-    })
-    .reverse();
+  const groupsByKey = new Map(groups);
+  const rows = lookbackDayKeys(30).map((key) => {
+    const dayEntries = groupsByKey.get(key) || [];
+    const total = sumEntries(dayEntries, chartType);
+    const unit = unitFor(dayEntries, chartType, "oz");
+    return {
+      key,
+      label: chartDayLabel(key),
+      total,
+      unit,
+    };
+  });
   const max = Math.max(...rows.map((row) => row.total), 1);
 
   rows.forEach((row) => {
     const item = document.createElement("div");
-    item.className = "bar-row";
+    item.className = "chart-bar";
     const value = formatMetric(row.total, row.unit);
+    const height = row.total ? Math.max((row.total / max) * 100, 3) : 0;
+    item.title = `${row.label}: ${value}`;
     item.innerHTML = `
+      <div class="chart-bar-track" aria-label="${row.label}, ${value}">
+        <div class="chart-bar-fill" style="height: ${height}%"></div>
+      </div>
       <span>${row.label}</span>
-      <div class="bar-track"><div class="bar-fill" style="width: ${(row.total / max) * 100}%"></div></div>
-      <strong>${value}</strong>
     `;
     els.summaryChart.append(item);
   });
+}
+
+function lookbackDayKeys(days) {
+  const today = dayKey(new Date());
+  const cursor = new Date(`${today}T00:00:00${BANGKOK_OFFSET}`);
+  const keys = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(cursor);
+    date.setDate(cursor.getDate() - i);
+    keys.push(dayKey(date));
+  }
+  return keys;
+}
+
+function chartDayLabel(key) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIME_ZONE,
+    month: "short",
+    day: "numeric",
+  }).format(new Date(`${key}T00:00:00${BANGKOK_OFFSET}`));
 }
 
 function groupByDay(items) {

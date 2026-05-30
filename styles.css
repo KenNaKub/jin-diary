@@ -400,35 +400,48 @@ button:focus {
 
 .bar-chart {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(30, minmax(12px, 1fr));
+  align-items: end;
+  gap: 5px;
+  min-height: 150px;
+  padding-top: 6px;
 }
 
-.bar-row {
+.chart-bar {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) 74px;
-  align-items: center;
-  gap: 10px;
+  grid-template-rows: minmax(92px, 1fr) 28px;
+  gap: 6px;
+  min-width: 0;
   color: var(--muted);
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 850;
+  text-align: center;
 }
 
-.bar-track {
-  height: 18px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.74);
-}
-
-.bar-fill {
-  min-width: 4px;
+.chart-bar-track {
+  position: relative;
+  display: flex;
+  align-items: end;
   height: 100%;
-  border-radius: inherit;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 4px 4px 2px 2px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.chart-bar-fill {
+  width: 100%;
   background: var(--orange);
 }
 
-.bar-row strong {
-  color: var(--ink);
-  text-align: right;
+.chart-bar span {
+  overflow: hidden;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+}
+
+.bar-chart .empty-state {
+  grid-column: 1 / -1;
 }
 
 .day-card {
@@ -627,12 +640,28 @@ pre {
     min-width: 0;
   }
 
-  .bar-row {
-    grid-template-columns: 78px minmax(0, 1fr);
+  .bar-chart {
+    grid-template-columns: repeat(30, minmax(5px, 1fr));
+    gap: 2px;
+    min-height: 128px;
   }
 
-  .bar-row strong {
-    grid-column: 2;
-    text-align: left;
+  .chart-bar {
+    grid-template-rows: minmax(82px, 1fr) 42px;
+    font-size: 8px;
+  }
+
+  .chart-bar span {
+    justify-self: center;
+    overflow: visible;
+    line-height: 1;
+    text-overflow: clip;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+  }
+
+  .chart-bar:not(:nth-child(5n)) span {
+    visibility: hidden;
   }
 }
