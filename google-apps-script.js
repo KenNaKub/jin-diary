@@ -24,7 +24,7 @@ function handleAction(action, params) {
 function appendEntry(params) {
   const sheet = getSheet();
   const entry = typeof params.entry === "string" ? JSON.parse(params.entry || "{}") : params.entry || params;
-  sheet.appendRow([
+  const row = [
     entry.id,
     entry.happenedAt,
     entry.type,
@@ -32,7 +32,13 @@ function appendEntry(params) {
     entry.unit,
     entry.note,
     entry.createdAt || bangkokTimestamp(),
-  ]);
+  ];
+  const existingRow = findRowById(sheet, entry.id);
+  if (existingRow) {
+    sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
+  } else {
+    sheet.appendRow(row);
+  }
   return { ok: true, entry };
 }
 
@@ -44,16 +50,24 @@ function listEntries() {
   const sheet = getSheet();
   const values = sheet.getDataRange().getValues();
   const rows = values.slice(1).filter((row) => row[0]);
+  const seen = {};
   return {
     ok: true,
-    entries: rows.map((row) => ({
-      id: row[0],
-      happenedAt: row[1],
-      type: row[2],
-      amount: row[3],
-      unit: row[4],
-      note: row[5],
-    })),
+    entries: rows
+      .filter((row) => {
+        const id = String(row[0]);
+        if (seen[id]) return false;
+        seen[id] = true;
+        return true;
+      })
+      .map((row) => ({
+        id: row[0],
+        happenedAt: row[1],
+        type: row[2],
+        amount: row[3],
+        unit: row[4],
+        note: row[5],
+      })),
   };
 }
 
@@ -61,13 +75,25 @@ function deleteEntry(params) {
   const sheet = getSheet();
   const id = String(params.id || params.entryId || "");
   const values = sheet.getDataRange().getValues();
+  let deleted = false;
   for (let i = values.length - 1; i >= 1; i--) {
     if (String(values[i][0]) === id) {
       sheet.deleteRow(i + 1);
-      return { ok: true, id };
+      deleted = true;
     }
   }
+  if (deleted) return { ok: true, id };
   return { ok: false, id, error: "Entry not found" };
+}
+
+function findRowById(sheet, id) {
+  if (!id) return 0;
+  const values = sheet.getDataRange().getValues();
+  const target = String(id);
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === target) return i + 1;
+  }
+  return 0;
 }
 
 function getSheet() {
