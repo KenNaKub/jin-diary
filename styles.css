@@ -253,10 +253,11 @@ button:focus {
 
 .datetime-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
 }
 
+.compact-time,
 .compact-now {
   min-width: 66px;
   padding: 0 12px;

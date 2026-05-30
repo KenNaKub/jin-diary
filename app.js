@@ -130,6 +130,7 @@ const els = {
   amount: document.querySelector("#amount"),
   unit: document.querySelector("#unit"),
   note: document.querySelector("#note"),
+  minusTenButton: document.querySelector("#minusTenButton"),
   nowButton: document.querySelector("#nowButton"),
   sampleButton: document.querySelector("#sampleButton"),
   syncMainButton: document.querySelector("#syncMainButton"),
@@ -162,6 +163,10 @@ function configureLocalOnlyUi() {
 
 function localDateTimeValue(date = new Date()) {
   return bangkokDateTimeParts(date).inputValue;
+}
+
+function localDateTimeFromInput(value) {
+  return value ? new Date(parseLocalInput(value)) : new Date();
 }
 
 function parseLocalInput(value) {
@@ -688,6 +693,12 @@ els.type.addEventListener("change", () => {
 
 els.nowButton.addEventListener("click", () => {
   els.happenedAt.value = localDateTimeValue();
+});
+
+els.minusTenButton.addEventListener("click", () => {
+  const date = localDateTimeFromInput(els.happenedAt.value);
+  date.setMinutes(date.getMinutes() - 10);
+  els.happenedAt.value = localDateTimeValue(date);
 });
 
 els.sampleButton.addEventListener("click", loadSampleDay);
