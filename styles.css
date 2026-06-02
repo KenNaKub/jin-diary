@@ -318,6 +318,10 @@ button:focus {
   border-left-color: var(--berry);
 }
 
+.timeline-item[data-type="height"] {
+  border-left-color: var(--gold);
+}
+
 .time {
   color: var(--muted);
   font-weight: 900;
@@ -400,49 +404,64 @@ button:focus {
 }
 
 .bar-chart {
-  display: grid;
-  grid-template-columns: repeat(30, minmax(12px, 1fr));
-  align-items: end;
-  gap: 5px;
+  display: block;
   min-height: 150px;
   padding-top: 6px;
 }
 
-.chart-bar {
-  display: grid;
-  grid-template-rows: minmax(92px, 1fr) 28px;
-  gap: 6px;
-  min-width: 0;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 850;
-  text-align: center;
-}
-
-.chart-bar-track {
-  position: relative;
-  display: flex;
-  align-items: end;
-  height: 100%;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 4px 4px 2px 2px;
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.chart-bar-fill {
-  width: 100%;
-  background: var(--orange);
-}
-
-.chart-bar span {
-  overflow: hidden;
-  line-height: 1.05;
-  text-overflow: ellipsis;
-}
-
 .bar-chart .empty-state {
   grid-column: 1 / -1;
+}
+
+.bar-chart svg,
+.line-chart svg {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+}
+
+.chart-axis {
+  stroke: rgba(102, 114, 127, 0.5);
+  stroke-width: 1;
+}
+
+.chart-grid-line {
+  stroke: rgba(102, 114, 127, 0.52);
+  stroke-width: 1;
+}
+
+.bar-chart-fill {
+  fill: var(--orange);
+  opacity: 0.9;
+}
+
+.line-chart-path {
+  fill: none;
+  stroke: var(--berry);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.line-chart-point {
+  fill: #fff;
+  stroke: var(--berry);
+  stroke-width: 3;
+}
+
+.height-chart .line-chart-path {
+  stroke: var(--gold);
+}
+
+.height-chart .line-chart-point {
+  stroke: var(--gold);
+}
+
+.chart-y,
+.chart-x {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
 }
 
 .day-card {
@@ -642,27 +661,27 @@ pre {
   }
 
   .bar-chart {
-    grid-template-columns: repeat(30, minmax(5px, 1fr));
-    gap: 2px;
     min-height: 128px;
   }
 
-  .chart-bar {
-    grid-template-rows: minmax(82px, 1fr) 42px;
+  .chart-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .chart-toggle {
+    min-width: 0;
+    padding: 0 8px;
+  }
+
+  .bar-chart svg,
+  .line-chart svg {
+    min-height: 164px;
+  }
+
+  .chart-y,
+  .chart-x {
     font-size: 8px;
-  }
-
-  .chart-bar span {
-    justify-self: center;
-    overflow: visible;
-    line-height: 1;
-    text-overflow: clip;
-    transform: rotate(180deg);
-    white-space: nowrap;
-    writing-mode: vertical-rl;
-  }
-
-  .chart-bar:not(:nth-child(5n)) span {
-    visibility: hidden;
   }
 }

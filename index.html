@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="assets/JINN-thumbnail.jpg" />
     <link rel="icon" href="assets/JINN-thumbnail.jpg" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="styles.css?v=20260530-2" />
+    <link rel="stylesheet" href="styles.css?v=20260602-6" />
   </head>
   <body>
     <div class="sync-badge sync-status">Local only</div>
@@ -34,8 +34,9 @@
             <select id="activityType" required>
               <option value="breast">Breast</option>
               <option value="pump">Pump</option>
-              <option value="feed">Feed</option>
+              <option value="feed" selected>Feed</option>
               <option value="weight">Weight</option>
+              <option value="height">Height</option>
               <option value="diaper">Diaper</option>
               <option value="sleep">Sleep</option>
               <option value="note">Note</option>
@@ -63,6 +64,7 @@
               <option value="oz">oz</option>
               <option value="ml">ml</option>
               <option value="kg">kg</option>
+              <option value="cm">cm</option>
               <option value="min">min</option>
             </select>
           </label>
@@ -102,10 +104,12 @@
           <button id="refreshButton" type="button">Resync</button>
         </div>
         <details class="chart-panel" open>
-          <summary>Milk chart (30d)</summary>
+          <summary>Chart (30d)</summary>
           <div class="chart-controls" aria-label="Chart metric">
             <button class="chart-toggle is-active" type="button" data-chart-type="feed">Feed</button>
             <button class="chart-toggle" type="button" data-chart-type="pump">Pump</button>
+            <button class="chart-toggle" type="button" data-chart-type="weight">Weight</button>
+            <button class="chart-toggle" type="button" data-chart-type="height">Height</button>
           </div>
           <div class="bar-chart" id="summaryChart"></div>
         </details>
@@ -154,6 +158,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260530-2"></script>
+    <script src="app.js?v=20260602-6"></script>
   </body>
 </html>
