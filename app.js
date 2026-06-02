@@ -1,4 +1,5 @@
 const STORAGE_KEY = "jin-diary-entries";
+const DELETED_STORAGE_KEY = "jin-diary-deleted-entry-ids";
 const SETTINGS_KEY = "jin-diary-settings";
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywIWTWnpCDGlCDRJ0aNNnWUw-rz72KpgXL9lwdWYWPem-sRbE0_bu0XfV2NaiCvqPi/exec";
 const APP_TIME_ZONE = "Asia/Bangkok";
@@ -120,6 +121,7 @@ function respond(payload, callback) {
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JAVASCRIPT);
 }`;
 
+let deletedEntryIds = loadDeletedEntryIds();
 let entries = loadEntries();
 let settings = loadSettings();
 let chartType = "feed";
@@ -283,11 +285,11 @@ function renderTimelineItem(entry) {
   node.querySelector("span").textContent = amountLabel(entry);
   node.querySelector("p").textContent = entry.note || "";
   node.querySelector("button").addEventListener("click", async () => {
-    const deleted = await deleteFromSheet(entry.id).catch(() => false);
-    if (!deleted) return;
+    rememberDeletedEntry(entry.id);
     entries = entries.filter((item) => item.id !== entry.id);
     saveEntries();
     render();
+    await deleteFromSheet(entry.id).catch(() => false);
   });
   return node;
 }
@@ -608,9 +610,32 @@ function saveEntries() {
 
 function loadEntries() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    return loaded.filter((entry) => !isDeletedEntry(entry));
   } catch {
     return [];
+  }
+}
+
+function rememberDeletedEntry(id) {
+  if (!id) return;
+  deletedEntryIds.add(String(id));
+  saveDeletedEntryIds();
+}
+
+function isDeletedEntry(entry) {
+  return entry?.id && deletedEntryIds.has(String(entry.id));
+}
+
+function saveDeletedEntryIds() {
+  localStorage.setItem(DELETED_STORAGE_KEY, JSON.stringify([...deletedEntryIds]));
+}
+
+function loadDeletedEntryIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DELETED_STORAGE_KEY)) || []);
+  } catch {
+    return new Set();
   }
 }
 
@@ -699,7 +724,7 @@ async function syncFromSheet() {
   renderStatus("Syncing...");
   const payload = await jsonp("list");
   if (payload.ok && Array.isArray(payload.entries)) {
-    const sheetEntries = dedupeEntries(payload.entries.map(normalizeEntry));
+    const sheetEntries = dedupeEntries(payload.entries.map(normalizeEntry)).filter((entry) => !isDeletedEntry(entry));
     const sheetIds = new Set(sheetEntries.map((entry) => entry.id));
     const localOnlyEntries = entries.filter((entry) => entry.pendingSync && entry.id && !sheetIds.has(entry.id));
 
@@ -720,7 +745,7 @@ async function syncFromSheet() {
         return false;
       }
 
-      entries = dedupeEntries(refreshed.entries.map(normalizeEntry));
+      entries = dedupeEntries(refreshed.entries.map(normalizeEntry)).filter((entry) => !isDeletedEntry(entry));
     } else {
       entries = sheetEntries;
     }
@@ -779,8 +804,6 @@ function loadSampleDay() {
     ["18:33", "feed", 3.5, "oz", ""],
     ["19:30", "feed", 2, "oz", ""],
     ["20:35", "feed", 2, "oz", ""],
-    ["21:00", "weight", 7.355, "kg", ""],
-    ["21:05", "height", 66, "cm", ""],
   ];
 
   entries = samples.map(([time, type, amount, unit, note]) => ({
