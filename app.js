@@ -373,7 +373,7 @@ function renderBarChart(groups) {
   const rows = lookbackDayKeys(CHART_DAYS).map((key) => {
     const dayEntries = groupsByKey.get(key) || [];
     const total = sumEntries(dayEntries, chartType);
-    const unit = unitFor(dayEntries, chartType, "oz");
+    const unit = unitFor(dayEntries, chartType, defaultUnitFor(chartType));
     return {
       key,
       label: chartDayLabel(key),
@@ -547,7 +547,7 @@ function calculateDay(items) {
   return {
     feed: countAndAmount(entriesFor("feed"), sumEntries(items, "feed"), unitFor(items, "feed", "oz")),
     pump: countAndAmount(entriesFor("pump"), sumEntries(items, "pump"), unitFor(items, "pump", "oz")),
-    breast: countAndAmount(entriesFor("breast"), sumEntries(items, "breast"), unitFor(items, "breast", "oz")),
+    breast: countAndAmount(entriesFor("breast"), sumEntries(items, "breast"), unitFor(items, "breast", defaultUnitFor("breast"))),
     weight: weight ? amountLabel(weight) : "-",
     height: height ? amountLabel(height) : "-",
   };
@@ -908,8 +908,12 @@ render();
 syncFromSheet().catch(() => renderStatus("Sync failed"));
 
 function setDefaultUnit() {
+  els.unit.value = defaultUnitFor(els.type.value);
+}
+
+function defaultUnitFor(type) {
   const defaults = {
-    breast: "",
+    breast: "min",
     pump: "oz",
     feed: "oz",
     weight: "kg",
@@ -918,5 +922,5 @@ function setDefaultUnit() {
     sleep: "min",
     note: "",
   };
-  els.unit.value = defaults[els.type.value] || "";
+  return defaults[type] || "";
 }
