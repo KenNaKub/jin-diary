@@ -159,7 +159,12 @@ function isLocalTestHost(hostname = window.location.hostname) {
 }
 
 function configureLocalOnlyUi() {
-  if (isLocalTestHost()) return;
+  if (isLocalTestHost()) {
+    document.documentElement.classList.add("local-test");
+    document.querySelector('[data-view-button="settings"]')?.removeAttribute("hidden");
+    document.querySelector('[data-view="settings"]')?.removeAttribute("hidden");
+    return;
+  }
 
   document.querySelector('[data-view-button="settings"]')?.setAttribute("hidden", "");
   document.querySelector('[data-view="settings"]')?.setAttribute("hidden", "");
