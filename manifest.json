@@ -4,8 +4,8 @@
   "description": "Baby activity log for Jin.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#2b2824",
-  "theme_color": "#f47c20",
+  "background_color": "#30231c",
+  "theme_color": "#f8a86c",
   "icons": [
     {
       "src": "assets/JINN-thumbnail-192.jpg",
