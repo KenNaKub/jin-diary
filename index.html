@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
     <title>JINN DIARY</title>
-    <meta name="theme-color" content="#f47c20" />
+    <meta name="theme-color" content="#f8a86c" />
     <meta name="apple-mobile-web-app-title" content="JINN DIARY" />
     <link rel="apple-touch-icon" href="assets/JINN-thumbnail.jpg" />
     <link rel="icon" href="assets/JINN-thumbnail.jpg" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="styles.css?v=20260602-6" />
+    <link rel="stylesheet" href="styles.css?v=20260605-1" />
   </head>
   <body>
     <div class="sync-badge sync-status">Local only</div>
@@ -22,9 +22,28 @@
       </header>
 
       <nav class="tabs" aria-label="Views">
-        <button class="tab is-active" type="button" data-view-button="memo">Memo</button>
-        <button class="tab" type="button" data-view-button="summary">Summary</button>
-        <button class="tab" type="button" data-view-button="settings">Sheet</button>
+        <button class="tab is-active" type="button" data-view-button="memo" aria-label="Memo">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M4 10.8 12 4l8 6.8V20a1 1 0 0 1-1 1h-5.2v-6.4H10.2V21H5a1 1 0 0 1-1-1v-9.2Z" />
+          </svg>
+          <span>Memo</span>
+        </button>
+        <button class="tab" type="button" data-view-button="summary" aria-label="Summary">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M4.5 19.5h15M6.2 16.5v-4.8M12 16.5V7.2M17.8 16.5v-7" />
+            <circle cx="6.2" cy="10" r="1.5" />
+            <circle cx="12" cy="5.5" r="1.5" />
+            <circle cx="17.8" cy="7.8" r="1.5" />
+          </svg>
+          <span>Summary</span>
+        </button>
+        <button class="tab" type="button" data-view-button="settings" aria-label="Sheet">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6 4.5h9l3 3v12H6v-15Z" />
+            <path d="M9 11h6M9 14h6M9 17h3" />
+          </svg>
+          <span>Sheet</span>
+        </button>
       </nav>
 
       <section class="view is-active" id="memoView" data-view="memo">
@@ -158,6 +177,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260602-6"></script>
+    <script src="app.js?v=20260605-1"></script>
   </body>
 </html>
