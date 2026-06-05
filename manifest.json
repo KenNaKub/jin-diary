@@ -2,7 +2,7 @@
   "name": "JINN DIARY",
   "short_name": "JINN DIARY",
   "description": "Baby activity log for Jin.",
-  "start_url": "./index.html",
+  "start_url": "./index.html?v=20260605-4",
   "display": "standalone",
   "background_color": "#30231c",
   "theme_color": "#f8a86c",
