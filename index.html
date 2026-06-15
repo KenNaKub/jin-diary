@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="assets/JINN-thumbnail.jpg" />
     <link rel="icon" href="assets/JINN-thumbnail.jpg" />
     <link rel="manifest" href="manifest.json?v=20260605-4" />
-    <link rel="stylesheet" href="styles.css?v=20260615-1" />
+    <link rel="stylesheet" href="styles.css?v=20260615-3" />
   </head>
   <body>
     <div class="sync-badge sync-status">Local only</div>
@@ -27,6 +27,14 @@
             <path d="M4 10.8 12 4l8 6.8V20a1 1 0 0 1-1 1h-5.2v-6.4H10.2V21H5a1 1 0 0 1-1-1v-9.2Z" />
           </svg>
           <span>Memo</span>
+        </button>
+        <button class="tab" type="button" data-view-button="development" aria-label="Development">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 20.5V12M12 12C8.8 12 6.2 9.4 6.2 6.2V4.5H8c3.2 0 5.8 2.6 5.8 5.8V12" />
+            <path d="M12 12c3.2 0 5.8-2.6 5.8-5.8V4.5H16c-1.7 0-3.2.7-4.2 1.8" />
+            <path d="M7.2 20.5h9.6" />
+          </svg>
+          <span>Growth</span>
         </button>
         <button class="tab" type="button" data-view-button="summary" aria-label="Summary">
           <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -114,25 +122,92 @@
         </section>
       </section>
 
+      <section class="view" id="developmentView" data-view="development">
+        <form class="entry-panel development-panel" id="developmentForm">
+          <div class="development-intro span-4">
+            <p class="eyebrow dark">FIRST-TIME LOG</p>
+            <h2>Growth and development</h2>
+          </div>
+
+          <label class="span-2">
+            <span>Date achieved</span>
+            <input id="developmentDate" type="date" required />
+          </label>
+
+          <label class="span-2">
+            <span>First achievement</span>
+            <input id="developmentMilestone" type="text" list="milestoneSuggestions" placeholder="Sitting, standing, rolling..." required />
+            <datalist id="milestoneSuggestions">
+              <option value="Rolled over"></option>
+              <option value="Sat without support"></option>
+              <option value="Crawled"></option>
+              <option value="Pulled to stand"></option>
+              <option value="Stood alone"></option>
+              <option value="First steps"></option>
+              <option value="First word"></option>
+            </datalist>
+          </label>
+
+          <label class="span-4">
+            <span>Note</span>
+            <textarea id="developmentNote" rows="3" placeholder="What happened, who saw it, how confident it looked"></textarea>
+          </label>
+
+          <div class="form-actions span-4">
+            <button type="submit">Save milestone</button>
+          </div>
+        </form>
+
+        <section class="log-panel">
+          <div class="section-header">
+            <div class="section-title">
+              <h2>Milestones</h2>
+              <p id="developmentLabel">No milestones yet</p>
+            </div>
+          </div>
+          <div class="development-list" id="developmentList"></div>
+        </section>
+      </section>
+
       <section class="view" id="summaryView" data-view="summary">
         <div class="section-header">
           <div>
             <h2>Daily summary</h2>
-            <p>Totals and timeline grouped by day.</p>
+            <p>Charts, daily cards, and development history.</p>
           </div>
           <button id="refreshButton" type="button">Resync</button>
         </div>
-        <details class="chart-panel" open>
-          <summary>Chart (30d)</summary>
-          <div class="chart-controls" aria-label="Chart metric">
-            <button class="chart-toggle is-active" type="button" data-chart-type="feed">Feed</button>
-            <button class="chart-toggle" type="button" data-chart-type="pump">Pump</button>
-            <button class="chart-toggle" type="button" data-chart-type="weight">Weight</button>
-            <button class="chart-toggle" type="button" data-chart-type="height">Height</button>
-          </div>
-          <div class="bar-chart" id="summaryChart"></div>
-        </details>
-        <div class="day-grid" id="dayGrid"></div>
+
+        <div class="summary-tabs" aria-label="Summary sections">
+          <button class="summary-tab is-active" type="button" data-summary-pane-button="activity">Activity</button>
+          <button class="summary-tab" type="button" data-summary-pane-button="development">Development</button>
+        </div>
+
+        <div class="summary-pane is-active" data-summary-pane="activity">
+          <details class="chart-panel" open>
+            <summary>Chart (30d)</summary>
+            <div class="chart-controls" aria-label="Chart metric">
+              <button class="chart-toggle is-active" type="button" data-chart-type="feed">Feed</button>
+              <button class="chart-toggle" type="button" data-chart-type="pump">Pump</button>
+              <button class="chart-toggle" type="button" data-chart-type="weight">Weight</button>
+              <button class="chart-toggle" type="button" data-chart-type="height">Height</button>
+            </div>
+            <div class="bar-chart" id="summaryChart"></div>
+          </details>
+          <div class="day-grid" id="dayGrid"></div>
+        </div>
+
+        <div class="summary-pane" data-summary-pane="development">
+          <section class="development-summary" aria-labelledby="developmentSummaryTitle">
+            <div class="section-header compact">
+              <div>
+                <h2 id="developmentSummaryTitle">Development timeline</h2>
+                <p id="developmentSummaryLabel">First achievements appear here.</p>
+              </div>
+            </div>
+            <div class="milestone-rail" id="developmentSummaryTimeline"></div>
+          </section>
+        </div>
       </section>
 
       <section class="view" id="settingsView" data-view="settings" hidden>
@@ -177,6 +252,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260615-2"></script>
+    <script src="app.js?v=20260615-4"></script>
   </body>
 </html>

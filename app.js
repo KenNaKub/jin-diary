@@ -5,6 +5,7 @@ const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywIWTWnpCDG
 const APP_TIME_ZONE = "Asia/Bangkok";
 const BANGKOK_OFFSET = "+07:00";
 const DEFAULT_ACTIVITY = "feed";
+const DEVELOPMENT_TYPE = "development";
 const DAILY_SUMMARY_LIMIT = 10;
 const CHART_DAYS = 30;
 
@@ -125,14 +126,19 @@ let deletedEntryIds = loadDeletedEntryIds();
 let entries = loadEntries();
 let settings = loadSettings();
 let chartType = "feed";
+let summaryPane = "activity";
 const sessionPendingEntryIds = new Set();
 
 const els = {
   tabs: document.querySelectorAll("[data-view-button]"),
   views: document.querySelectorAll("[data-view]"),
   form: document.querySelector("#entryForm"),
+  developmentForm: document.querySelector("#developmentForm"),
   type: document.querySelector("#activityType"),
   happenedAt: document.querySelector("#happenedAt"),
+  developmentDate: document.querySelector("#developmentDate"),
+  developmentMilestone: document.querySelector("#developmentMilestone"),
+  developmentNote: document.querySelector("#developmentNote"),
   amount: document.querySelector("#amount"),
   unit: document.querySelector("#unit"),
   note: document.querySelector("#note"),
@@ -144,9 +150,15 @@ const els = {
   refreshButton: document.querySelector("#refreshButton"),
   todayTimeline: document.querySelector("#todayTimeline"),
   todayLabel: document.querySelector("#todayLabel"),
+  developmentList: document.querySelector("#developmentList"),
+  developmentLabel: document.querySelector("#developmentLabel"),
+  developmentSummaryTimeline: document.querySelector("#developmentSummaryTimeline"),
+  developmentSummaryLabel: document.querySelector("#developmentSummaryLabel"),
   dayGrid: document.querySelector("#dayGrid"),
   summaryChart: document.querySelector("#summaryChart"),
   chartToggles: document.querySelectorAll("[data-chart-type]"),
+  summaryPaneButtons: document.querySelectorAll("[data-summary-pane-button]"),
+  summaryPanes: document.querySelectorAll("[data-summary-pane]"),
   syncStatuses: document.querySelectorAll(".sync-status"),
   scriptUrl: document.querySelector("#scriptUrl"),
   saveSettingsButton: document.querySelector("#saveSettingsButton"),
@@ -224,6 +236,16 @@ function formatDay(value) {
   }).format(new Date(value));
 }
 
+function formatFullDate(value) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIME_ZONE,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 function dayKey(value) {
   return bangkokDateTimeParts(new Date(value)).date;
 }
@@ -238,6 +260,7 @@ function activityLabel(type) {
     diaper: "Diaper",
     sleep: "Sleep",
     note: "Note",
+    development: "Milestone",
   };
   return labels[type] || type;
 }
@@ -254,6 +277,7 @@ function sortedEntries() {
 function render() {
   renderStatus();
   renderToday();
+  renderDevelopment();
   renderSummary();
 }
 
@@ -294,6 +318,61 @@ function renderTimelineItem(entry) {
   return node;
 }
 
+function developmentEntries() {
+  return sortedEntries()
+    .filter((entry) => entry.type === DEVELOPMENT_TYPE)
+    .sort((a, b) => new Date(b.happenedAt) - new Date(a.happenedAt));
+}
+
+function parseMilestoneText(entry) {
+  const text = (entry.note || "").trim();
+  const [title, ...rest] = text.split("\n");
+  return {
+    title: title || "Milestone",
+    note: rest.join("\n").trim(),
+  };
+}
+
+function formatMilestoneNote(title, note) {
+  return [title.trim(), note.trim()].filter(Boolean).join("\n");
+}
+
+function renderDevelopment() {
+  if (!els.developmentList) return;
+  const milestones = developmentEntries();
+  els.developmentList.replaceChildren();
+  els.developmentLabel.textContent = milestones.length
+    ? `${milestones.length} ${milestones.length === 1 ? "milestone" : "milestones"} saved`
+    : "No milestones yet";
+
+  if (!milestones.length) {
+    els.developmentList.append(emptyState("Save Jinn's first rolling, sitting, standing, words, or any moment worth remembering."));
+    return;
+  }
+
+  milestones.forEach((entry) => {
+    const { title, note } = parseMilestoneText(entry);
+    const card = document.createElement("article");
+    card.className = "milestone-card";
+    card.innerHTML = `
+      <div class="milestone-date">${formatFullDate(entry.happenedAt)}</div>
+      <div class="milestone-copy">
+        <h3></h3>
+        <p></p>
+      </div>
+      <button class="icon danger" type="button" aria-label="Delete milestone">x</button>
+    `;
+    card.querySelector("h3").textContent = title;
+    const noteNode = card.querySelector("p");
+    noteNode.textContent = note;
+    noteNode.toggleAttribute("hidden", !note);
+    const deleteButton = card.querySelector("button");
+    deleteButton.setAttribute("aria-label", `Delete milestone: ${title}`);
+    deleteButton.addEventListener("click", () => deleteEntryRecord(entry, deleteButton));
+    els.developmentList.append(card);
+  });
+}
+
 async function deleteEntryRecord(entry, button) {
   if (!entry?.id) return false;
   if (button) button.disabled = true;
@@ -319,6 +398,8 @@ function renderSummary() {
   const groups = groupByDay(sortedEntries());
   const visibleGroups = groups.slice(0, DAILY_SUMMARY_LIMIT);
   els.dayGrid.replaceChildren();
+  renderSummaryPanes();
+  renderDevelopmentSummary();
 
   if (!groups.length) {
     renderSummaryChart([]);
@@ -340,6 +421,7 @@ function renderSummary() {
         <div class="metric"><span>Breast</span><strong>${metrics.breast.count}</strong><small>${metrics.breast.amount}</small></div>
         <div class="metric"><span>Weight</span><strong>${metrics.weight}</strong></div>
         <div class="metric"><span>Height</span><strong>${metrics.height}</strong></div>
+        <div class="metric"><span>Milestones</span><strong>${metrics.development}</strong></div>
       </div>
       <details class="day-details">
         <summary>Details</summary>
@@ -368,6 +450,50 @@ function renderSummary() {
       });
 
     els.dayGrid.append(card);
+  });
+}
+
+function renderSummaryPanes() {
+  els.summaryPaneButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.summaryPaneButton === summaryPane);
+  });
+  els.summaryPanes.forEach((pane) => {
+    pane.classList.toggle("is-active", pane.dataset.summaryPane === summaryPane);
+  });
+}
+
+function renderDevelopmentSummary() {
+  if (!els.developmentSummaryTimeline) return;
+  const milestones = developmentEntries().sort((a, b) => new Date(a.happenedAt) - new Date(b.happenedAt));
+  els.developmentSummaryTimeline.replaceChildren();
+  els.developmentSummaryLabel.textContent = milestones.length
+    ? `${milestones.length} first-time ${milestones.length === 1 ? "moment" : "moments"} recorded`
+    : "First achievements appear here.";
+
+  if (!milestones.length) {
+    els.developmentSummaryTimeline.append(emptyState("No development milestones saved yet."));
+    return;
+  }
+
+  milestones.forEach((entry, index) => {
+    const { title, note } = parseMilestoneText(entry);
+    const item = document.createElement("article");
+    item.className = "milestone-rail-item";
+    item.innerHTML = `
+      <div class="milestone-dot" aria-hidden="true">${index + 1}</div>
+      <div class="milestone-rail-copy">
+        <time></time>
+        <h3></h3>
+        <p></p>
+      </div>
+    `;
+    item.querySelector("time").dateTime = dayKey(entry.happenedAt);
+    item.querySelector("time").textContent = formatFullDate(entry.happenedAt);
+    item.querySelector("h3").textContent = title;
+    const noteNode = item.querySelector("p");
+    noteNode.textContent = note;
+    noteNode.toggleAttribute("hidden", !note);
+    els.developmentSummaryTimeline.append(item);
   });
 }
 
@@ -575,6 +701,7 @@ function calculateDay(items) {
     breast: countAndAmount(entriesFor("breast"), sumEntries(items, "breast"), unitFor(items, "breast", defaultUnitFor("breast"))),
     weight: weight ? amountLabel(weight) : "-",
     height: height ? amountLabel(height) : "-",
+    development: entriesFor(DEVELOPMENT_TYPE).length,
   };
 }
 
@@ -629,6 +756,24 @@ function createEntry() {
     amount: els.amount.value === "" ? "" : Number(els.amount.value),
     unit: els.unit.value,
     note: els.note.value.trim(),
+    createdAt: currentBangkokTimestamp(),
+    pendingSync: true,
+  };
+  sessionPendingEntryIds.add(entry.id);
+  return entry;
+}
+
+function createDevelopmentEntry() {
+  const date = els.developmentDate.value || dayKey(new Date());
+  const title = els.developmentMilestone.value.trim();
+  const note = els.developmentNote.value.trim();
+  const entry = {
+    id: crypto.randomUUID(),
+    happenedAt: `${date}T09:00:00${BANGKOK_OFFSET}`,
+    type: DEVELOPMENT_TYPE,
+    amount: "",
+    unit: "",
+    note: formatMilestoneNote(title, note),
     createdAt: currentBangkokTimestamp(),
     pendingSync: true,
   };
@@ -860,6 +1005,7 @@ function loadSampleDay() {
     ["18:33", "feed", 3.5, "oz", ""],
     ["19:30", "feed", 2, "oz", ""],
     ["20:35", "feed", 2, "oz", ""],
+    ["09:00", DEVELOPMENT_TYPE, "", "", "Rolled over\nFirst clear back-to-tummy roll during morning play."],
   ];
 
   entries = samples.map(([time, type, amount, unit, note]) => ({
@@ -881,6 +1027,7 @@ els.tabs.forEach((button) => {
     els.tabs.forEach((item) => item.classList.toggle("is-active", item === button));
     els.views.forEach((item) => item.classList.toggle("is-active", item.dataset.view === view));
     if (view === "summary") renderSummary();
+    if (view === "development") renderDevelopment();
   });
 });
 
@@ -893,6 +1040,24 @@ els.form.addEventListener("submit", async (event) => {
   els.amount.value = "";
   els.note.value = "";
   els.happenedAt.value = localDateTimeValue();
+
+  try {
+    const saved = await appendToSheet(entry);
+    if (saved) await syncFromSheet();
+  } catch {
+    renderStatus("Sheet save failed");
+  }
+});
+
+els.developmentForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const entry = createDevelopmentEntry();
+  entries.push(entry);
+  saveEntries();
+  render();
+  els.developmentMilestone.value = "";
+  els.developmentNote.value = "";
+  els.developmentDate.value = dayKey(new Date());
 
   try {
     const saved = await appendToSheet(entry);
@@ -925,6 +1090,14 @@ els.chartToggles.forEach((button) => {
   });
 });
 
+els.summaryPaneButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    summaryPane = button.dataset.summaryPaneButton;
+    renderSummaryPanes();
+    if (summaryPane === "activity") renderSummaryChart(groupByDay(sortedEntries()));
+  });
+});
+
 els.syncMainButton.addEventListener("click", () => {
   syncFromSheet().catch(() => renderStatus("Sync failed"));
 });
@@ -950,6 +1123,7 @@ els.syncButton.addEventListener("click", () => {
 });
 
 els.happenedAt.value = localDateTimeValue();
+els.developmentDate.value = dayKey(new Date());
 els.type.value = DEFAULT_ACTIVITY;
 setDefaultUnit();
 els.scriptUrl.value = settings.scriptUrl || "";
@@ -972,6 +1146,7 @@ function defaultUnitFor(type) {
     diaper: "",
     sleep: "min",
     note: "",
+    development: "",
   };
   return defaults[type] || "";
 }

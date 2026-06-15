@@ -60,7 +60,8 @@ body::after {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -280,20 +281,33 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   min-width: 0;
   width: 100%;
-  height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
-  padding: 0 12px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+input,
+select {
+  height: 44px;
+  padding: 0 12px;
+}
+
+textarea {
+  min-height: 104px;
+  resize: vertical;
+  padding: 12px;
+  line-height: 1.4;
 }
 
 input:focus,
 select:focus,
+textarea:focus,
 button:focus {
   border-color: var(--orange);
   outline: 3px solid var(--focus);
@@ -371,6 +385,10 @@ button:focus {
   border-left-color: var(--gold);
 }
 
+.timeline-item[data-type="development"] {
+  border-left-color: var(--teal);
+}
+
 .time {
   color: #8d6a55;
   font-weight: 900;
@@ -409,6 +427,204 @@ button:focus {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 14px;
   margin-top: 14px;
+}
+
+.summary-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 4px;
+  box-shadow: 0 12px 30px rgba(43, 26, 12, 0.1);
+  backdrop-filter: var(--blur);
+}
+
+.summary-tab {
+  min-width: 122px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 16px;
+}
+
+.summary-tab.is-active {
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 0 0 2px rgba(248, 168, 108, 0.42);
+  color: var(--orange-dark);
+}
+
+.summary-tab:hover {
+  transform: none;
+}
+
+.summary-pane {
+  display: none;
+}
+
+.summary-pane.is-active {
+  display: block;
+}
+
+.development-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.development-panel::before {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(42, 155, 145, 0.14), transparent 38%),
+    linear-gradient(315deg, rgba(217, 155, 50, 0.13), transparent 42%);
+  content: "";
+  pointer-events: none;
+}
+
+.development-panel > * {
+  position: relative;
+}
+
+.development-intro {
+  display: grid;
+  gap: 4px;
+}
+
+.eyebrow.dark {
+  color: var(--orange-dark);
+  text-shadow: none;
+}
+
+.development-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.milestone-card {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid rgba(42, 155, 145, 0.18);
+  border-left: 5px solid var(--teal);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  padding: 12px;
+  box-shadow: 0 8px 22px rgba(43, 26, 12, 0.08);
+}
+
+.milestone-date {
+  color: #1f756f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.milestone-copy {
+  min-width: 0;
+}
+
+.milestone-card h3,
+.milestone-rail-item h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.milestone-card p,
+.milestone-rail-item p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.development-summary {
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--blur);
+  padding: 15px;
+}
+
+.section-header.compact {
+  align-items: start;
+}
+
+.milestone-rail {
+  position: relative;
+  display: grid;
+  gap: 0;
+  margin-top: 14px;
+  padding-left: 6px;
+}
+
+.milestone-rail::before {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 20px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--teal), var(--gold));
+  content: "";
+}
+
+.milestone-rail .empty-state {
+  margin-left: -6px;
+}
+
+.milestone-rail:has(.empty-state)::before {
+  display: none;
+}
+
+.milestone-rail-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  padding: 0 0 16px;
+}
+
+.milestone-rail-item:last-child {
+  padding-bottom: 0;
+}
+
+.milestone-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid rgba(255, 255, 255, 0.76);
+  border-radius: 999px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(42, 155, 145, 0.22);
+}
+
+.milestone-rail-copy {
+  border: 1px solid rgba(42, 155, 145, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.54);
+  padding: 11px 12px;
+}
+
+.milestone-rail-copy time {
+  display: block;
+  margin-bottom: 3px;
+  color: #1f756f;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .chart-panel {
@@ -719,7 +935,7 @@ pre {
     left: max(28px, env(safe-area-inset-left));
     z-index: 9;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 4px;
     margin: 0;
     border-color: rgba(255, 255, 255, 0.66);
@@ -732,7 +948,7 @@ pre {
   }
 
   .local-test .tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .tab {
@@ -767,6 +983,38 @@ pre {
     gap: 8px;
   }
 
+  .milestone-card {
+    grid-template-columns: minmax(0, 1fr) 38px;
+    gap: 8px;
+  }
+
+  .milestone-date {
+    grid-column: 1 / -1;
+  }
+
+  .development-summary {
+    background: rgba(255, 251, 246, 0.5);
+    backdrop-filter: blur(6px) saturate(1.04);
+  }
+
+  .milestone-rail {
+    padding-left: 0;
+  }
+
+  .milestone-rail::before {
+    left: 14px;
+  }
+
+  .milestone-rail-item {
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .milestone-dot {
+    width: 28px;
+    height: 28px;
+  }
+
   input[type="datetime-local"] {
     appearance: none;
     font-size: 16px;
@@ -794,6 +1042,18 @@ pre {
     padding: 0 10px;
     font-size: 13px;
     text-align: center;
+  }
+
+  .summary-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    border-radius: 999px;
+  }
+
+  .summary-tab {
+    min-width: 0;
+    padding: 0 10px;
   }
 
   .bar-chart svg,
