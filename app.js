@@ -125,6 +125,7 @@ let deletedEntryIds = loadDeletedEntryIds();
 let entries = loadEntries();
 let settings = loadSettings();
 let chartType = "feed";
+const sessionPendingEntryIds = new Set();
 
 const els = {
   tabs: document.querySelectorAll("[data-view-button]"),
@@ -597,7 +598,7 @@ function emptyState(text) {
 }
 
 function createEntry() {
-  return {
+  const entry = {
     id: crypto.randomUUID(),
     happenedAt: parseLocalInput(els.happenedAt.value),
     type: els.type.value,
@@ -607,6 +608,8 @@ function createEntry() {
     createdAt: currentBangkokTimestamp(),
     pendingSync: true,
   };
+  sessionPendingEntryIds.add(entry.id);
+  return entry;
 }
 
 function saveEntries() {
@@ -624,6 +627,7 @@ function loadEntries() {
 
 function rememberDeletedEntry(id) {
   if (!id) return;
+  sessionPendingEntryIds.delete(String(id));
   deletedEntryIds.add(String(id));
   saveDeletedEntryIds();
 }
@@ -707,8 +711,16 @@ async function appendToSheet(entry, options = {}) {
   if (options.showStatus !== false) renderStatus("Saving to sheet...");
   const payload = await jsonp("append", { entry: JSON.stringify(entry) });
   const saved = payload.ok && payload.entry?.id === entry.id;
+  if (saved) markEntrySynced(entry.id);
   if (options.showStatus !== false) renderStatus(saved ? "Saved to sheet" : "Sheet save failed");
   return saved;
+}
+
+function markEntrySynced(id) {
+  if (!id) return;
+  sessionPendingEntryIds.delete(String(id));
+  entries = entries.map((entry) => (entry.id === id ? { ...entry, pendingSync: false } : entry));
+  saveEntries();
 }
 
 async function deleteFromSheet(id) {
@@ -731,7 +743,9 @@ async function syncFromSheet() {
   if (payload.ok && Array.isArray(payload.entries)) {
     const sheetEntries = dedupeEntries(payload.entries.map(normalizeEntry)).filter((entry) => !isDeletedEntry(entry));
     const sheetIds = new Set(sheetEntries.map((entry) => entry.id));
-    const localOnlyEntries = entries.filter((entry) => entry.pendingSync && entry.id && !sheetIds.has(entry.id));
+    const localOnlyEntries = entries.filter(
+      (entry) => entry.pendingSync && entry.id && sessionPendingEntryIds.has(entry.id) && !sheetIds.has(entry.id)
+    );
 
     if (localOnlyEntries.length) {
       renderStatus(`Uploading ${localOnlyEntries.length} local ${localOnlyEntries.length === 1 ? "entry" : "entries"}...`);
