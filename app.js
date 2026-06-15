@@ -290,14 +290,29 @@ function renderTimelineItem(entry) {
   node.querySelector("strong").textContent = activityLabel(entry.type);
   node.querySelector("span").textContent = amountLabel(entry);
   node.querySelector("p").textContent = entry.note || "";
-  node.querySelector("button").addEventListener("click", async () => {
-    rememberDeletedEntry(entry.id);
-    entries = entries.filter((item) => item.id !== entry.id);
-    saveEntries();
-    render();
-    await deleteFromSheet(entry.id).catch(() => false);
-  });
+  node.querySelector("button").addEventListener("click", (event) => deleteEntryRecord(entry, event.currentTarget));
   return node;
+}
+
+async function deleteEntryRecord(entry, button) {
+  if (!entry?.id) return false;
+  if (button) button.disabled = true;
+
+  const localOnly = !settings.scriptUrl || entry.pendingSync;
+  const deletedFromSheet = localOnly ? true : await deleteFromSheet(entry.id).catch(() => false);
+
+  if (!deletedFromSheet) {
+    renderStatus("Sheet delete failed");
+    if (button) button.disabled = false;
+    return false;
+  }
+
+  rememberDeletedEntry(entry.id);
+  entries = entries.filter((item) => item.id !== entry.id);
+  saveEntries();
+  render();
+  renderStatus(localOnly ? "Deleted locally" : "Deleted from sheet");
+  return true;
 }
 
 function renderSummary() {
@@ -338,8 +353,17 @@ function renderSummary() {
       .sort((a, b) => new Date(a.happenedAt) - new Date(b.happenedAt))
       .forEach((entry) => {
         const line = document.createElement("div");
+        line.className = "compact-list-item";
         const amount = amountLabel(entry);
-        line.textContent = `${formatTime(entry.happenedAt)} ${activityLabel(entry.type)}${amount ? ` (${amount})` : ""}${entry.note ? ` - ${entry.note}` : ""}`;
+        const text = document.createElement("span");
+        text.textContent = `${formatTime(entry.happenedAt)} ${activityLabel(entry.type)}${amount ? ` (${amount})` : ""}${entry.note ? ` - ${entry.note}` : ""}`;
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "icon danger compact-delete";
+        deleteButton.type = "button";
+        deleteButton.setAttribute("aria-label", `Delete ${activityLabel(entry.type)} at ${formatTime(entry.happenedAt)}`);
+        deleteButton.textContent = "x";
+        deleteButton.addEventListener("click", () => deleteEntryRecord(entry, deleteButton));
+        line.append(text, deleteButton);
         list.append(line);
       });
 
@@ -727,8 +751,9 @@ async function deleteFromSheet(id) {
   if (!settings.scriptUrl) return true;
   renderStatus("Deleting from sheet...");
   const payload = await jsonp("delete", { id });
-  const deleted = payload.ok && payload.id === id;
-  renderStatus(deleted ? "Deleted from sheet" : "Sheet delete failed");
+  const notFound = payload.error === "Entry not found";
+  const deleted = String(payload.id) === String(id) && (payload.ok || notFound);
+  renderStatus(deleted ? (notFound ? "Already deleted from sheet" : "Deleted from sheet") : "Sheet delete failed");
   return deleted;
 }
 
