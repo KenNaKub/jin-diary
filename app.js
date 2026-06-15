@@ -656,6 +656,14 @@ function rememberDeletedEntry(id) {
   saveDeletedEntryIds();
 }
 
+function forgetDeletedEntries(ids) {
+  let changed = false;
+  ids.forEach((id) => {
+    if (deletedEntryIds.delete(String(id))) changed = true;
+  });
+  if (changed) saveDeletedEntryIds();
+}
+
 function isDeletedEntry(entry) {
   return entry?.id && deletedEntryIds.has(String(entry.id));
 }
@@ -766,7 +774,9 @@ async function syncFromSheet() {
   renderStatus("Syncing...");
   const payload = await jsonp("list");
   if (payload.ok && Array.isArray(payload.entries)) {
-    const sheetEntries = dedupeEntries(payload.entries.map(normalizeEntry)).filter((entry) => !isDeletedEntry(entry));
+    const rawSheetEntries = dedupeEntries(payload.entries.map(normalizeEntry));
+    forgetDeletedEntries(rawSheetEntries.map((entry) => entry.id).filter(Boolean));
+    const sheetEntries = rawSheetEntries.filter((entry) => !isDeletedEntry(entry));
     const sheetIds = new Set(sheetEntries.map((entry) => entry.id));
     const localOnlyEntries = entries.filter(
       (entry) => entry.pendingSync && entry.id && sessionPendingEntryIds.has(entry.id) && !sheetIds.has(entry.id)
@@ -789,7 +799,9 @@ async function syncFromSheet() {
         return false;
       }
 
-      entries = dedupeEntries(refreshed.entries.map(normalizeEntry)).filter((entry) => !isDeletedEntry(entry));
+      const refreshedEntries = dedupeEntries(refreshed.entries.map(normalizeEntry));
+      forgetDeletedEntries(refreshedEntries.map((entry) => entry.id).filter(Boolean));
+      entries = refreshedEntries.filter((entry) => !isDeletedEntry(entry));
     } else {
       entries = sheetEntries;
     }
