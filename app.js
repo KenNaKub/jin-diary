@@ -556,10 +556,12 @@ function renderBarChart(groups) {
         const y = yFor(row.total);
         const barHeight = pad.top + plotHeight - y;
         const displayHeight = row.total ? Math.max(barHeight, 2) : 0;
+        const valueLabel = `${row.label}: ${formatMetric(row.total, row.unit)}`;
+        const markAttrs = row.total
+          ? `tabindex="0" role="button" aria-label="${escapeAttribute(valueLabel)}" data-chart-tooltip="${escapeAttribute(valueLabel)}" data-chart-x="${(x + barWidth / 2).toFixed(2)}" data-chart-y="${(pad.top + plotHeight - displayHeight).toFixed(2)}"`
+          : `aria-label="${escapeAttribute(valueLabel)}"`;
         return `
-          <rect class="bar-chart-fill" x="${x.toFixed(2)}" y="${(pad.top + plotHeight - displayHeight).toFixed(2)}" width="${barWidth.toFixed(2)}" height="${displayHeight.toFixed(2)}" rx="2">
-            <title>${row.label}: ${formatMetric(row.total, row.unit)}</title>
-          </rect>
+          <rect class="bar-chart-fill" x="${x.toFixed(2)}" y="${(pad.top + plotHeight - displayHeight).toFixed(2)}" width="${barWidth.toFixed(2)}" height="${displayHeight.toFixed(2)}" rx="2" ${markAttrs}></rect>
           ${
             index % 5 === 0
               ? `<text class="chart-x" x="${(x + barWidth / 2).toFixed(2)}" y="${height - 10}" text-anchor="middle">${row.label}</text>`
@@ -570,6 +572,7 @@ function renderBarChart(groups) {
       .join("")}
   `;
   els.summaryChart.append(svg);
+  bindChartTooltips(svg);
 }
 
 function renderMeasurementChart(groups) {
@@ -616,11 +619,14 @@ function renderMeasurementChart(groups) {
     <path class="line-chart-path" d="${path}"></path>
     ${points
       .map(
-        (point) => `
-          <circle class="line-chart-point" cx="${xFor(point.index).toFixed(2)}" cy="${yFor(point.value).toFixed(2)}" r="4">
-            <title>${point.label}: ${formatMetric(point.value, point.unit)}</title>
-          </circle>
-        `,
+        (point) => {
+          const x = xFor(point.index);
+          const y = yFor(point.value);
+          const valueLabel = `${point.label}: ${formatMetric(point.value, point.unit)}`;
+          return `
+          <circle class="line-chart-point" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="4" tabindex="0" role="button" aria-label="${escapeAttribute(valueLabel)}" data-chart-tooltip="${escapeAttribute(valueLabel)}" data-chart-x="${x.toFixed(2)}" data-chart-y="${y.toFixed(2)}"></circle>
+        `;
+        },
       )
       .join("")}
     ${labels
@@ -632,6 +638,67 @@ function renderMeasurementChart(groups) {
       .join("")}
   `;
   els.summaryChart.append(svg);
+  bindChartTooltips(svg);
+}
+
+function bindChartTooltips(svg) {
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.hidden = true;
+  els.summaryChart.append(tooltip);
+
+  const marks = svg.querySelectorAll("[data-chart-tooltip]");
+  const hideTooltip = () => {
+    marks.forEach((mark) => mark.classList.remove("is-active"));
+    tooltip.hidden = true;
+    delete tooltip.dataset.activeMark;
+  };
+
+  marks.forEach((mark, index) => {
+    mark.dataset.chartMark = String(index);
+    mark.addEventListener("mouseenter", () => showChartTooltip(mark, svg, tooltip, marks));
+    mark.addEventListener("focus", () => showChartTooltip(mark, svg, tooltip, marks));
+    mark.addEventListener("mouseleave", hideTooltip);
+    mark.addEventListener("blur", hideTooltip);
+    mark.addEventListener("pointerup", (event) => {
+      if (event.pointerType === "mouse") return;
+      event.preventDefault();
+      if (tooltip.dataset.activeMark === mark.dataset.chartMark && !tooltip.hidden) {
+        hideTooltip();
+        return;
+      }
+      showChartTooltip(mark, svg, tooltip, marks);
+    });
+  });
+
+  svg.addEventListener("mouseleave", hideTooltip);
+}
+
+function showChartTooltip(mark, svg, tooltip, marks) {
+  marks.forEach((item) => item.classList.toggle("is-active", item === mark));
+  tooltip.textContent = mark.dataset.chartTooltip;
+  tooltip.hidden = false;
+  tooltip.dataset.activeMark = mark.dataset.chartMark;
+
+  const containerRect = els.summaryChart.getBoundingClientRect();
+  const svgRect = svg.getBoundingClientRect();
+  const viewBox = svg.viewBox.baseVal;
+  const x = Number(mark.dataset.chartX || 0);
+  const y = Number(mark.dataset.chartY || 0);
+  const scaledX = svgRect.left - containerRect.left + (x / viewBox.width) * svgRect.width;
+  const scaledY = svgRect.top - containerRect.top + (y / viewBox.height) * svgRect.height;
+  const inset = 8;
+
+  tooltip.style.left = "0px";
+  tooltip.style.top = "0px";
+  const tooltipWidth = tooltip.offsetWidth;
+  const tooltipHeight = tooltip.offsetHeight;
+  const left = clamp(scaledX - tooltipWidth / 2, inset, containerRect.width - tooltipWidth - inset);
+  const preferredTop = scaledY - tooltipHeight - 10;
+  const top = preferredTop < inset ? scaledY + 10 : preferredTop;
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${clamp(top, inset, containerRect.height - tooltipHeight - inset)}px`;
 }
 
 function chartGridLines(yMax, yFor, pad, plotWidth, valueUnit) {
@@ -739,6 +806,19 @@ function formatMetric(value, unit) {
 
 function formatChartNumber(value) {
   return Number(value).toLocaleString("en-US", { maximumFractionDigits: 1 });
+}
+
+function escapeAttribute(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function clamp(value, min, max) {
+  const upper = Math.max(min, max);
+  return Math.min(Math.max(value, min), upper);
 }
 
 function emptyState(text) {

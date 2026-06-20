@@ -678,6 +678,7 @@ button:focus {
 }
 
 .bar-chart {
+  position: relative;
   display: block;
   min-height: 150px;
   padding-top: 6px;
@@ -707,6 +708,22 @@ button:focus {
 .bar-chart-fill {
   fill: var(--orange);
   opacity: 0.9;
+  outline: none;
+  transition:
+    opacity 140ms ease,
+    stroke-width 140ms ease;
+}
+
+.bar-chart-fill[data-chart-tooltip] {
+  cursor: pointer;
+}
+
+.bar-chart-fill[data-chart-tooltip]:hover,
+.bar-chart-fill[data-chart-tooltip]:focus,
+.bar-chart-fill.is-active {
+  opacity: 1;
+  stroke: var(--orange-dark);
+  stroke-width: 2;
 }
 
 .line-chart-path {
@@ -721,6 +738,18 @@ button:focus {
   fill: #fff;
   stroke: var(--berry);
   stroke-width: 3;
+  cursor: pointer;
+  outline: none;
+  transition:
+    r 140ms ease,
+    stroke-width 140ms ease;
+}
+
+.line-chart-point:hover,
+.line-chart-point:focus,
+.line-chart-point.is-active {
+  r: 5.5px;
+  stroke-width: 4;
 }
 
 .height-chart .line-chart-path {
@@ -729,6 +758,27 @@ button:focus {
 
 .height-chart .line-chart-point {
   stroke: var(--gold);
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 2;
+  max-width: min(180px, calc(100% - 16px));
+  border: 1px solid rgba(158, 78, 19, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 253, 250, 0.94);
+  box-shadow: 0 12px 30px rgba(43, 26, 12, 0.18);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+  padding: 7px 9px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.chart-tooltip[hidden] {
+  display: none;
 }
 
 .chart-y,
