@@ -389,6 +389,10 @@ button:focus {
   border-left-color: var(--teal);
 }
 
+.timeline-item[data-type="eczema"] {
+  border-left-color: var(--berry);
+}
+
 .time {
   color: #8d6a55;
   font-weight: 900;
@@ -477,7 +481,8 @@ button:focus {
   overflow: hidden;
 }
 
-.development-panel::before {
+.development-panel::before,
+.skin-panel::before {
   position: absolute;
   inset: 0;
   background:
@@ -488,6 +493,21 @@ button:focus {
 }
 
 .development-panel > * {
+  position: relative;
+}
+
+.skin-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.skin-panel::before {
+  background:
+    linear-gradient(135deg, rgba(186, 107, 145, 0.15), transparent 38%),
+    linear-gradient(315deg, rgba(42, 155, 145, 0.12), transparent 42%);
+}
+
+.skin-panel > * {
   position: relative;
 }
 
@@ -617,6 +637,384 @@ button:focus {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.54);
   padding: 11px 12px;
+}
+
+.body-map-field {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid rgba(186, 107, 145, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.48);
+  padding: 12px;
+}
+
+.body-map-field legend {
+  padding: 0 4px;
+  color: #74425c;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.body-side-toggle {
+  display: inline-flex;
+  justify-self: center;
+  gap: 4px;
+  border: 1px solid rgba(186, 107, 145, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.54);
+  padding: 4px;
+}
+
+.body-side-button {
+  min-width: 82px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 12px;
+}
+
+.body-side-button.is-active {
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 0 0 2px rgba(186, 107, 145, 0.38);
+  color: #7f3358;
+}
+
+.body-side-button:hover {
+  transform: none;
+}
+
+.body-map {
+  position: relative;
+  width: min(260px, 100%);
+  aspect-ratio: 0.62;
+  margin: 0 auto;
+}
+
+.body-map::before {
+  position: absolute;
+  inset: 5% 28% 2%;
+  border-radius: 42% 42% 28% 28%;
+  background:
+    radial-gradient(circle at 50% 7%, rgba(255, 245, 236, 0.96) 0 10%, transparent 10.5%),
+    linear-gradient(180deg, rgba(255, 244, 236, 0.95), rgba(255, 231, 218, 0.9));
+  box-shadow: inset 0 0 0 1px rgba(132, 86, 53, 0.14);
+  content: "";
+}
+
+.body-map[data-map-side="back"]::before {
+  border-radius: 38% 38% 30% 30%;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 236, 0.96), rgba(255, 228, 217, 0.9)),
+    linear-gradient(90deg, transparent 48%, rgba(132, 86, 53, 0.16) 49% 51%, transparent 52%);
+}
+
+.body-map[data-map-side="back"]::after {
+  position: absolute;
+  top: 9%;
+  left: 47%;
+  width: 6%;
+  height: 66%;
+  border-radius: 999px;
+  background: rgba(132, 86, 53, 0.1);
+  content: "";
+  pointer-events: none;
+}
+
+.body-region {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(132, 86, 53, 0.18);
+  background: rgba(255, 255, 255, 0.54);
+  color: #6d5547;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0;
+  box-shadow: 0 6px 16px rgba(43, 26, 12, 0.08);
+}
+
+.body-region:hover {
+  transform: none;
+}
+
+.body-region.is-selected {
+  border-color: rgba(186, 107, 145, 0.72);
+  background: #fdeaf2;
+  color: #7f3358;
+  box-shadow:
+    inset 0 0 0 2px rgba(186, 107, 145, 0.2),
+    0 8px 18px rgba(186, 107, 145, 0.18);
+}
+
+.body-region.head {
+  top: 1%;
+  left: 35%;
+  width: 30%;
+  height: 14%;
+  border-radius: 999px;
+}
+
+.body-region.neck {
+  top: 15%;
+  left: 42%;
+  width: 16%;
+  height: 7%;
+  border-radius: 7px;
+}
+
+.body-region.torso {
+  top: 22%;
+  left: 31%;
+  width: 38%;
+  height: 33%;
+  border-radius: 40% 40% 18% 18%;
+}
+
+.body-region.arm-left,
+.body-region.arm-right {
+  top: 24%;
+  width: 16%;
+  height: 34%;
+  border-radius: 999px;
+}
+
+.body-region.arm-left {
+  left: 13%;
+  transform: rotate(12deg);
+}
+
+.body-region.arm-left:hover {
+  transform: rotate(12deg);
+}
+
+.body-region.arm-right {
+  right: 13%;
+  transform: rotate(-12deg);
+}
+
+.body-region.arm-right:hover {
+  transform: rotate(-12deg);
+}
+
+.body-region.hand-left,
+.body-region.hand-right {
+  top: 56%;
+  width: 13%;
+  height: 9%;
+  border-radius: 999px;
+}
+
+.body-region.hand-left {
+  left: 9%;
+}
+
+.body-region.hand-right {
+  right: 9%;
+}
+
+.body-region.diaper {
+  top: 54%;
+  left: 34%;
+  width: 32%;
+  height: 14%;
+  border-radius: 18% 18% 45% 45%;
+}
+
+.body-region.leg-left,
+.body-region.leg-right {
+  top: 66%;
+  width: 16%;
+  height: 25%;
+  border-radius: 999px;
+}
+
+.body-region.leg-left {
+  left: 31%;
+}
+
+.body-region.leg-right {
+  right: 31%;
+}
+
+.body-region.foot-left,
+.body-region.foot-right {
+  bottom: 1%;
+  width: 19%;
+  height: 8%;
+  border-radius: 999px;
+}
+
+.body-region.foot-left {
+  left: 25%;
+}
+
+.body-region.foot-right {
+  right: 25%;
+}
+
+.skin-fields {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.eczema-list,
+.eczema-history,
+.eczema-ranking {
+  display: grid;
+  gap: 10px;
+}
+
+.eczema-list {
+  margin-top: 14px;
+}
+
+.eczema-card,
+.eczema-history-item {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(186, 107, 145, 0.18);
+  border-left: 5px solid var(--berry);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  padding: 12px;
+  box-shadow: 0 8px 22px rgba(43, 26, 12, 0.08);
+}
+
+.eczema-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  cursor: default;
+}
+
+.eczema-card.is-active {
+  cursor: pointer;
+}
+
+.eczema-card-main {
+  min-width: 0;
+}
+
+.eczema-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  margin-bottom: 5px;
+  border-radius: 999px;
+  background: rgba(42, 155, 145, 0.12);
+  color: #1f756f;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 0 8px;
+}
+
+.eczema-card:not(.is-active) .eczema-status {
+  background: rgba(132, 86, 53, 0.1);
+  color: var(--muted);
+}
+
+.eczema-card h3,
+.eczema-summary-card h3,
+.eczema-history-item h4 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.eczema-dates,
+.eczema-note {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.eczema-card-actions {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+}
+
+.eczema-end-toggle {
+  min-width: 86px;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.eczema-end-form {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) auto;
+  align-items: end;
+  gap: 10px;
+  border-top: 1px solid rgba(186, 107, 145, 0.14);
+  padding-top: 10px;
+}
+
+.eczema-end-form[hidden] {
+  display: none;
+}
+
+.eczema-summary {
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--blur);
+  padding: 15px;
+}
+
+.eczema-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.eczema-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.eczema-summary-card {
+  border: 1px solid rgba(186, 107, 145, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.52);
+  padding: 12px;
+}
+
+.eczema-ranking,
+.eczema-history {
+  margin-top: 10px;
+}
+
+.eczema-rank-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  border: 1px solid rgba(132, 86, 53, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.56);
+  padding: 10px;
+}
+
+.eczema-rank-row span {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.eczema-rank-row strong {
+  color: #7f3358;
+  font-size: 13px;
 }
 
 .milestone-rail-copy time {
@@ -985,7 +1383,7 @@ pre {
     left: max(28px, env(safe-area-inset-left));
     z-index: 9;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
     margin: 0;
     border-color: rgba(255, 255, 255, 0.66);
@@ -998,7 +1396,7 @@ pre {
   }
 
   .local-test .tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .tab {
@@ -1036,6 +1434,35 @@ pre {
   .milestone-card {
     grid-template-columns: minmax(0, 1fr) 38px;
     gap: 8px;
+  }
+
+  .body-map-field {
+    padding: 10px;
+  }
+
+  .body-map {
+    width: min(220px, 100%);
+  }
+
+  .eczema-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .eczema-card-actions {
+    justify-content: space-between;
+  }
+
+  .eczema-card-actions .icon {
+    margin-left: auto;
+  }
+
+  .eczema-end-form {
+    grid-template-columns: 1fr;
+  }
+
+  .eczema-stat-grid,
+  .eczema-summary-grid {
+    grid-template-columns: 1fr;
   }
 
   .milestone-date {

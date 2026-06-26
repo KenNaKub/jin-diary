@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="assets/JINN-thumbnail.jpg" />
     <link rel="icon" href="assets/JINN-thumbnail.jpg" />
     <link rel="manifest" href="manifest.json?v=20260605-4" />
-    <link rel="stylesheet" href="styles.css?v=20260620-1" />
+    <link rel="stylesheet" href="styles.css?v=20260626-1" />
   </head>
   <body>
     <div class="sync-badge sync-status">Local only</div>
@@ -35,6 +35,14 @@
             <path d="M7.2 20.5h9.6" />
           </svg>
           <span>Growth</span>
+        </button>
+        <button class="tab" type="button" data-view-button="skin" aria-label="Skin">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 3.5c2.2 2.1 4.7 4.9 4.7 8.1a4.7 4.7 0 0 1-9.4 0c0-3.2 2.5-6 4.7-8.1Z" />
+            <path d="M10 12.5c.6.7 1.3 1 2 1s1.4-.3 2-1" />
+            <path d="M8.5 18.2c1 .8 2.1 1.3 3.5 1.3s2.5-.5 3.5-1.3" />
+          </svg>
+          <span>Skin</span>
         </button>
         <button class="tab" type="button" data-view-button="summary" aria-label="Summary">
           <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -169,6 +177,64 @@
         </section>
       </section>
 
+      <section class="view" id="skinView" data-view="skin">
+        <form class="entry-panel skin-panel" id="eczemaForm">
+          <div class="development-intro span-4">
+            <p class="eyebrow dark">SYMPTOM LOG</p>
+            <h2>Eczema tracker</h2>
+          </div>
+
+          <fieldset class="body-map-field span-2">
+            <legend>Select affected parts</legend>
+            <div class="body-side-toggle" aria-label="Body side">
+              <button class="body-side-button is-active" type="button" data-body-side="front">Front</button>
+              <button class="body-side-button" type="button" data-body-side="back">Back</button>
+            </div>
+            <div class="body-map" data-map-side="front" aria-label="Affected body parts">
+              <button class="body-region head" type="button" data-body-part="head-face" data-front-label="Head" data-back-label="Back head" aria-pressed="false">Head</button>
+              <button class="body-region neck" type="button" data-body-part="neck" data-front-label="Neck" data-back-label="Nape" aria-pressed="false">Neck</button>
+              <button class="body-region torso" type="button" data-body-part="torso" data-front-label="Torso" data-back-label="Back" aria-pressed="false">Torso</button>
+              <button class="body-region arm-left" type="button" data-body-part="arms" data-front-label="Arms" data-back-label="Arms" aria-pressed="false">Arms</button>
+              <button class="body-region arm-right" type="button" data-body-part="arms" data-front-label="Arms" data-back-label="Arms" aria-pressed="false">Arms</button>
+              <button class="body-region hand-left" type="button" data-body-part="hands" data-front-label="Hands" data-back-label="Hands" aria-pressed="false">Hands</button>
+              <button class="body-region hand-right" type="button" data-body-part="hands" data-front-label="Hands" data-back-label="Hands" aria-pressed="false">Hands</button>
+              <button class="body-region diaper" type="button" data-body-part="diaper-area" data-front-label="Diaper" data-back-label="Diaper" aria-pressed="false">Diaper</button>
+              <button class="body-region leg-left" type="button" data-body-part="legs" data-front-label="Legs" data-back-label="Legs" aria-pressed="false">Legs</button>
+              <button class="body-region leg-right" type="button" data-body-part="legs" data-front-label="Legs" data-back-label="Legs" aria-pressed="false">Legs</button>
+              <button class="body-region foot-left" type="button" data-body-part="feet" data-front-label="Feet" data-back-label="Feet" aria-pressed="false">Feet</button>
+              <button class="body-region foot-right" type="button" data-body-part="feet" data-front-label="Feet" data-back-label="Feet" aria-pressed="false">Feet</button>
+            </div>
+            <p class="field-help" id="eczemaPartsLabel">No body parts selected</p>
+          </fieldset>
+
+          <div class="skin-fields span-2">
+            <label>
+              <span>Start date</span>
+              <input id="eczemaStartDate" type="date" required />
+            </label>
+
+            <label>
+              <span>Note</span>
+              <textarea id="eczemaNote" rows="6" placeholder="Redness, itchiness, trigger, cream used, or anything useful"></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button type="submit">Save symptom</button>
+            </div>
+          </div>
+        </form>
+
+        <section class="log-panel">
+          <div class="section-header">
+            <div class="section-title">
+              <h2>Eczema records</h2>
+              <p id="eczemaLabel">No records yet</p>
+            </div>
+          </div>
+          <div class="eczema-list" id="eczemaList"></div>
+        </section>
+      </section>
+
       <section class="view" id="summaryView" data-view="summary">
         <div class="section-header">
           <div>
@@ -181,6 +247,7 @@
         <div class="summary-tabs" aria-label="Summary sections">
           <button class="summary-tab is-active" type="button" data-summary-pane-button="activity">Activity</button>
           <button class="summary-tab" type="button" data-summary-pane-button="development">Development</button>
+          <button class="summary-tab" type="button" data-summary-pane-button="eczema">Eczema</button>
         </div>
 
         <div class="summary-pane is-active" data-summary-pane="activity">
@@ -206,6 +273,28 @@
               </div>
             </div>
             <div class="milestone-rail" id="developmentSummaryTimeline"></div>
+          </section>
+        </div>
+
+        <div class="summary-pane" data-summary-pane="eczema">
+          <section class="eczema-summary" aria-labelledby="eczemaSummaryTitle">
+            <div class="section-header compact">
+              <div>
+                <h2 id="eczemaSummaryTitle">Eczema summary</h2>
+                <p id="eczemaSummaryLabel">Symptom history appears here.</p>
+              </div>
+            </div>
+            <div class="eczema-stat-grid" id="eczemaStats"></div>
+            <div class="eczema-summary-grid">
+              <section class="eczema-summary-card">
+                <h3>Most affected parts</h3>
+                <div class="eczema-ranking" id="eczemaPartRanking"></div>
+              </section>
+              <section class="eczema-summary-card">
+                <h3>History</h3>
+                <div class="eczema-history" id="eczemaHistory"></div>
+              </section>
+            </div>
           </section>
         </div>
       </section>
@@ -252,6 +341,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260620-1"></script>
+    <script src="app.js?v=20260626-1"></script>
   </body>
 </html>

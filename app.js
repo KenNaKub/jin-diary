@@ -6,8 +6,24 @@ const APP_TIME_ZONE = "Asia/Bangkok";
 const BANGKOK_OFFSET = "+07:00";
 const DEFAULT_ACTIVITY = "feed";
 const DEVELOPMENT_TYPE = "development";
+const ECZEMA_TYPE = "eczema";
 const DAILY_SUMMARY_LIMIT = 10;
 const CHART_DAYS = 30;
+const ECZEMA_NOTE_KIND = "eczema-v1";
+const ECZEMA_SIDES = [
+  ["front", "Front"],
+  ["back", "Back"],
+];
+const ECZEMA_BODY_PARTS = [
+  ["head-face", "Head/face"],
+  ["neck", "Neck"],
+  ["torso", "Torso"],
+  ["arms", "Arms"],
+  ["hands", "Hands"],
+  ["diaper-area", "Diaper area"],
+  ["legs", "Legs"],
+  ["feet", "Feet"],
+];
 
 const scriptTemplate = `const SHEET_NAME = "entries";
 
@@ -127,6 +143,8 @@ let entries = loadEntries();
 let settings = loadSettings();
 let chartType = "feed";
 let summaryPane = "activity";
+let selectedEczemaParts = new Set();
+let selectedEczemaSide = "front";
 const sessionPendingEntryIds = new Set();
 
 const els = {
@@ -134,11 +152,15 @@ const els = {
   views: document.querySelectorAll("[data-view]"),
   form: document.querySelector("#entryForm"),
   developmentForm: document.querySelector("#developmentForm"),
+  eczemaForm: document.querySelector("#eczemaForm"),
   type: document.querySelector("#activityType"),
   happenedAt: document.querySelector("#happenedAt"),
   developmentDate: document.querySelector("#developmentDate"),
   developmentMilestone: document.querySelector("#developmentMilestone"),
   developmentNote: document.querySelector("#developmentNote"),
+  eczemaStartDate: document.querySelector("#eczemaStartDate"),
+  eczemaNote: document.querySelector("#eczemaNote"),
+  eczemaPartsLabel: document.querySelector("#eczemaPartsLabel"),
   amount: document.querySelector("#amount"),
   unit: document.querySelector("#unit"),
   note: document.querySelector("#note"),
@@ -154,6 +176,15 @@ const els = {
   developmentLabel: document.querySelector("#developmentLabel"),
   developmentSummaryTimeline: document.querySelector("#developmentSummaryTimeline"),
   developmentSummaryLabel: document.querySelector("#developmentSummaryLabel"),
+  eczemaList: document.querySelector("#eczemaList"),
+  eczemaLabel: document.querySelector("#eczemaLabel"),
+  eczemaStats: document.querySelector("#eczemaStats"),
+  eczemaPartRanking: document.querySelector("#eczemaPartRanking"),
+  eczemaHistory: document.querySelector("#eczemaHistory"),
+  eczemaSummaryLabel: document.querySelector("#eczemaSummaryLabel"),
+  bodyRegionButtons: document.querySelectorAll("[data-body-part]"),
+  bodySideButtons: document.querySelectorAll("[data-body-side]"),
+  bodyMap: document.querySelector(".body-map"),
   dayGrid: document.querySelector("#dayGrid"),
   summaryChart: document.querySelector("#summaryChart"),
   chartToggles: document.querySelectorAll("[data-chart-type]"),
@@ -261,13 +292,101 @@ function activityLabel(type) {
     sleep: "Sleep",
     note: "Note",
     development: "Milestone",
+    eczema: "Eczema",
   };
   return labels[type] || type;
+}
+
+function bodyPartLabel(part) {
+  const { side, bodyPart } = parseEczemaPartKey(part);
+  const sideLabel = Object.fromEntries(ECZEMA_SIDES)[side] || side;
+  const partLabel = Object.fromEntries(ECZEMA_BODY_PARTS)[bodyPart] || bodyPart;
+  return `${sideLabel} ${partLabel.toLowerCase()}`;
+}
+
+function eczemaPartKey(side, part) {
+  return `${side}:${part}`;
+}
+
+function parseEczemaPartKey(value) {
+  const [maybeSide, maybePart] = String(value || "").split(":");
+  const sides = new Set(ECZEMA_SIDES.map(([side]) => side));
+  if (maybePart && sides.has(maybeSide)) return { side: maybeSide, bodyPart: maybePart };
+  return { side: "front", bodyPart: String(value || "") };
+}
+
+function isAllowedEczemaPart(value) {
+  const { side, bodyPart } = parseEczemaPartKey(value);
+  const sides = new Set(ECZEMA_SIDES.map(([item]) => item));
+  const parts = new Set(ECZEMA_BODY_PARTS.map(([item]) => item));
+  return sides.has(side) && parts.has(bodyPart);
+}
+
+function dateAtMorning(date) {
+  return `${date}T09:00:00${BANGKOK_OFFSET}`;
+}
+
+function parseDateKey(date) {
+  return new Date(`${date}T00:00:00${BANGKOK_OFFSET}`);
+}
+
+function inclusiveDayCount(startDate, endDate) {
+  const start = parseDateKey(startDate);
+  const end = parseDateKey(endDate || dayKey(new Date()));
+  const diff = Math.floor((end - start) / 86400000);
+  return Math.max(diff + 1, 1);
+}
+
+function formatDateKey(date) {
+  return formatFullDate(dateAtMorning(date));
+}
+
+function parseEczemaDetails(entry) {
+  const fallback = { parts: [], endDate: "", note: (entry.note || "").trim() };
+  try {
+    const parsed = JSON.parse(entry.note || "{}");
+    if (parsed.kind !== ECZEMA_NOTE_KIND) return fallback;
+    return {
+      parts: Array.isArray(parsed.parts) ? parsed.parts.filter(isAllowedEczemaPart) : [],
+      endDate: typeof parsed.endDate === "string" ? parsed.endDate : "",
+      note: typeof parsed.note === "string" ? parsed.note.trim() : "",
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function formatEczemaNote(details) {
+  return JSON.stringify({
+    kind: ECZEMA_NOTE_KIND,
+    parts: details.parts,
+    endDate: details.endDate || "",
+    note: (details.note || "").trim(),
+  });
+}
+
+function eczemaPartLabels(parts) {
+  return parts.length ? parts.map(bodyPartLabel).join(", ") : "No parts";
+}
+
+function eczemaDurationLabel(entry) {
+  const details = parseEczemaDetails(entry);
+  const startDate = dayKey(entry.happenedAt);
+  const days = inclusiveDayCount(startDate, details.endDate);
+  return `${days} ${days === 1 ? "day" : "days"}`;
 }
 
 function amountLabel(entry) {
   if (entry.amount === "" || entry.amount == null) return "";
   return `${Number(entry.amount).toLocaleString("en-US", { maximumFractionDigits: 3 })}${entry.unit ? ` ${entry.unit}` : ""}`;
+}
+
+function entryNoteLabel(entry) {
+  if (entry.type !== ECZEMA_TYPE) return entry.note || "";
+  const details = parseEczemaDetails(entry);
+  const startDate = dayKey(entry.happenedAt);
+  const status = details.endDate ? `${formatDateKey(startDate)} to ${formatDateKey(details.endDate)}` : `Since ${formatDateKey(startDate)}`;
+  return [eczemaPartLabels(details.parts), status, details.note].filter(Boolean).join(" - ");
 }
 
 function sortedEntries() {
@@ -278,6 +397,7 @@ function render() {
   renderStatus();
   renderToday();
   renderDevelopment();
+  renderEczema();
   renderSummary();
 }
 
@@ -313,7 +433,7 @@ function renderTimelineItem(entry) {
   node.querySelector(".time").textContent = formatTime(entry.happenedAt);
   node.querySelector("strong").textContent = activityLabel(entry.type);
   node.querySelector("span").textContent = amountLabel(entry);
-  node.querySelector("p").textContent = entry.note || "";
+  node.querySelector("p").textContent = entryNoteLabel(entry);
   node.querySelector("button").addEventListener("click", (event) => deleteEntryRecord(entry, event.currentTarget));
   return node;
 }
@@ -373,6 +493,98 @@ function renderDevelopment() {
   });
 }
 
+function eczemaEntries() {
+  return sortedEntries()
+    .filter((entry) => entry.type === ECZEMA_TYPE)
+    .sort((a, b) => {
+      const aClosed = Boolean(parseEczemaDetails(a).endDate);
+      const bClosed = Boolean(parseEczemaDetails(b).endDate);
+      if (aClosed !== bClosed) return aClosed ? 1 : -1;
+      return new Date(b.happenedAt) - new Date(a.happenedAt);
+    });
+}
+
+function renderEczema() {
+  if (!els.eczemaList) return;
+  const records = eczemaEntries();
+  els.eczemaList.replaceChildren();
+  els.eczemaLabel.textContent = records.length
+    ? `${records.length} ${records.length === 1 ? "record" : "records"} saved`
+    : "No records yet";
+
+  if (!records.length) {
+    els.eczemaList.append(emptyState("Select body parts and save the start date when eczema symptoms appear."));
+    return;
+  }
+
+  records.forEach((entry) => els.eczemaList.append(renderEczemaCard(entry)));
+}
+
+function renderEczemaCard(entry) {
+  const details = parseEczemaDetails(entry);
+  const startDate = dayKey(entry.happenedAt);
+  const isActive = !details.endDate;
+  const card = document.createElement("article");
+  card.className = `eczema-card${isActive ? " is-active" : ""}`;
+  card.innerHTML = `
+    <div class="eczema-card-main">
+      <div class="eczema-status">${isActive ? "Active" : "Closed"}</div>
+      <h3></h3>
+      <p class="eczema-dates"></p>
+      <p class="eczema-note"></p>
+    </div>
+    <div class="eczema-card-actions">
+      <button class="secondary eczema-end-toggle" type="button">Set end</button>
+      <button class="icon danger" type="button" aria-label="Delete eczema record">x</button>
+    </div>
+    <form class="eczema-end-form" hidden>
+      <label>
+        <span>End date</span>
+        <input type="date" required />
+      </label>
+      <div class="form-actions">
+        <button type="submit">Save end date</button>
+      </div>
+    </form>
+  `;
+
+  card.querySelector("h3").textContent = eczemaPartLabels(details.parts);
+  card.querySelector(".eczema-dates").textContent = details.endDate
+    ? `${formatDateKey(startDate)} to ${formatDateKey(details.endDate)} (${eczemaDurationLabel(entry)})`
+    : `Since ${formatDateKey(startDate)} (${eczemaDurationLabel(entry)} so far)`;
+
+  const note = card.querySelector(".eczema-note");
+  note.textContent = details.note;
+  note.toggleAttribute("hidden", !details.note);
+
+  const endToggle = card.querySelector(".eczema-end-toggle");
+  const deleteButton = card.querySelector(".icon.danger");
+  const endForm = card.querySelector(".eczema-end-form");
+  const endInput = endForm.querySelector("input");
+  endInput.min = startDate;
+  endInput.value = details.endDate || dayKey(new Date());
+  endToggle.hidden = !isActive;
+
+  endToggle.addEventListener("click", () => {
+    endForm.hidden = !endForm.hidden;
+    if (!endForm.hidden) endInput.focus();
+  });
+  if (isActive) {
+    card.addEventListener("click", (event) => {
+      if (event.target.closest("button, input, form")) return;
+      endForm.hidden = false;
+      endInput.focus();
+    });
+  }
+  endForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await closeEczemaEntry(entry, endInput.value, endForm.querySelector("button"));
+  });
+  deleteButton.setAttribute("aria-label", `Delete eczema record for ${eczemaPartLabels(details.parts)}`);
+  deleteButton.addEventListener("click", () => deleteEntryRecord(entry, deleteButton));
+  return card;
+}
+
 async function deleteEntryRecord(entry, button) {
   if (!entry?.id) return false;
   if (button) button.disabled = true;
@@ -400,6 +612,7 @@ function renderSummary() {
   els.dayGrid.replaceChildren();
   renderSummaryPanes();
   renderDevelopmentSummary();
+  renderEczemaSummary();
 
   if (!groups.length) {
     renderSummaryChart([]);
@@ -422,6 +635,7 @@ function renderSummary() {
         <div class="metric"><span>Weight</span><strong>${metrics.weight}</strong></div>
         <div class="metric"><span>Height</span><strong>${metrics.height}</strong></div>
         <div class="metric"><span>Milestones</span><strong>${metrics.development}</strong></div>
+        <div class="metric"><span>Eczema</span><strong>${metrics.eczema}</strong></div>
       </div>
       <details class="day-details">
         <summary>Details</summary>
@@ -438,7 +652,8 @@ function renderSummary() {
         line.className = "compact-list-item";
         const amount = amountLabel(entry);
         const text = document.createElement("span");
-        text.textContent = `${formatTime(entry.happenedAt)} ${activityLabel(entry.type)}${amount ? ` (${amount})` : ""}${entry.note ? ` - ${entry.note}` : ""}`;
+        const note = entryNoteLabel(entry);
+        text.textContent = `${formatTime(entry.happenedAt)} ${activityLabel(entry.type)}${amount ? ` (${amount})` : ""}${note ? ` - ${note}` : ""}`;
         const deleteButton = document.createElement("button");
         deleteButton.className = "icon danger compact-delete";
         deleteButton.type = "button";
@@ -494,6 +709,97 @@ function renderDevelopmentSummary() {
     noteNode.textContent = note;
     noteNode.toggleAttribute("hidden", !note);
     els.developmentSummaryTimeline.append(item);
+  });
+}
+
+function renderEczemaSummary() {
+  if (!els.eczemaStats) return;
+  const records = eczemaEntries();
+  const activeRecords = records.filter((entry) => !parseEczemaDetails(entry).endDate);
+  const affectedDays = records.reduce((total, entry) => {
+    const details = parseEczemaDetails(entry);
+    return total + inclusiveDayCount(dayKey(entry.happenedAt), details.endDate);
+  }, 0);
+
+  els.eczemaSummaryLabel.textContent = records.length
+    ? `${records.length} ${records.length === 1 ? "episode" : "episodes"} tracked`
+    : "Symptom history appears here.";
+
+  els.eczemaStats.replaceChildren(
+    eczemaStatCard("Episodes", records.length),
+    eczemaStatCard("Affected days", affectedDays),
+    eczemaStatCard("Active", activeRecords.length),
+  );
+
+  renderEczemaPartRanking(records);
+  renderEczemaHistory(records);
+}
+
+function eczemaStatCard(label, value) {
+  const card = document.createElement("div");
+  card.className = "metric eczema-stat";
+  card.innerHTML = `
+    <span></span>
+    <strong></strong>
+  `;
+  card.querySelector("span").textContent = label;
+  card.querySelector("strong").textContent = value;
+  return card;
+}
+
+function renderEczemaPartRanking(records) {
+  els.eczemaPartRanking.replaceChildren();
+  const counts = new Map();
+  records.forEach((entry) => {
+    parseEczemaDetails(entry).parts.forEach((part) => {
+      counts.set(part, (counts.get(part) || 0) + 1);
+    });
+  });
+
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1] || bodyPartLabel(a[0]).localeCompare(bodyPartLabel(b[0])));
+  if (!ranked.length) {
+    els.eczemaPartRanking.append(emptyState("No body parts tracked yet."));
+    return;
+  }
+
+  ranked.forEach(([part, count]) => {
+    const row = document.createElement("div");
+    row.className = "eczema-rank-row";
+    row.innerHTML = `
+      <span></span>
+      <strong></strong>
+    `;
+    row.querySelector("span").textContent = bodyPartLabel(part);
+    row.querySelector("strong").textContent = `${count} ${count === 1 ? "episode" : "episodes"}`;
+    els.eczemaPartRanking.append(row);
+  });
+}
+
+function renderEczemaHistory(records) {
+  els.eczemaHistory.replaceChildren();
+  if (!records.length) {
+    els.eczemaHistory.append(emptyState("No eczema records saved yet."));
+    return;
+  }
+
+  records.forEach((entry) => {
+    const details = parseEczemaDetails(entry);
+    const startDate = dayKey(entry.happenedAt);
+    const item = document.createElement("article");
+    item.className = "eczema-history-item";
+    item.innerHTML = `
+      <h4></h4>
+      <p class="eczema-dates"></p>
+      <p class="eczema-note"></p>
+    `;
+    item.querySelector("h4").textContent = eczemaPartLabels(details.parts);
+    item.querySelector(".eczema-dates").textContent = details.endDate
+      ? `${formatDateKey(startDate)} to ${formatDateKey(details.endDate)} (${eczemaDurationLabel(entry)})`
+      : `Active since ${formatDateKey(startDate)} (${eczemaDurationLabel(entry)} so far)`;
+    const note = item.querySelector(".eczema-note");
+    note.textContent = details.note;
+    note.toggleAttribute("hidden", !details.note);
+    els.eczemaHistory.append(item);
   });
 }
 
@@ -769,6 +1075,7 @@ function calculateDay(items) {
     weight: weight ? amountLabel(weight) : "-",
     height: height ? amountLabel(height) : "-",
     development: entriesFor(DEVELOPMENT_TYPE).length,
+    eczema: entriesFor(ECZEMA_TYPE).length,
   };
 }
 
@@ -859,6 +1166,88 @@ function createDevelopmentEntry() {
   };
   sessionPendingEntryIds.add(entry.id);
   return entry;
+}
+
+function createEczemaEntry() {
+  const parts = [...selectedEczemaParts];
+  const startDate = els.eczemaStartDate.value || dayKey(new Date());
+  const entry = {
+    id: crypto.randomUUID(),
+    happenedAt: dateAtMorning(startDate),
+    type: ECZEMA_TYPE,
+    amount: "",
+    unit: "",
+    note: formatEczemaNote({
+      parts,
+      endDate: "",
+      note: els.eczemaNote.value,
+    }),
+    createdAt: currentBangkokTimestamp(),
+    pendingSync: true,
+  };
+  sessionPendingEntryIds.add(entry.id);
+  return entry;
+}
+
+async function closeEczemaEntry(entry, endDate, button) {
+  const startDate = dayKey(entry.happenedAt);
+  if (!endDate || endDate < startDate) {
+    renderStatus("End date must be on or after start");
+    return false;
+  }
+
+  if (button) button.disabled = true;
+  const details = parseEczemaDetails(entry);
+  const updatedEntry = {
+    ...entry,
+    note: formatEczemaNote({ ...details, endDate }),
+    pendingSync: true,
+  };
+  entries = entries.map((item) => (item.id === entry.id ? updatedEntry : item));
+  sessionPendingEntryIds.add(entry.id);
+  saveEntries();
+  render();
+
+  try {
+    const saved = await appendToSheet(updatedEntry);
+    if (saved) await syncFromSheet();
+    return saved;
+  } catch {
+    renderStatus("Sheet save failed");
+    return false;
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function setSelectedEczemaParts(parts) {
+  selectedEczemaParts = new Set(parts);
+  els.bodyRegionButtons.forEach((button) => {
+    const selected = selectedEczemaParts.has(eczemaPartKey(selectedEczemaSide, button.dataset.bodyPart));
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  renderSelectedEczemaParts();
+}
+
+function setSelectedEczemaSide(side) {
+  selectedEczemaSide = side;
+  els.bodySideButtons.forEach((button) => {
+    const selected = button.dataset.bodySide === side;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  if (els.bodyMap) els.bodyMap.dataset.mapSide = side;
+  els.bodyRegionButtons.forEach((button) => {
+    button.textContent = side === "back" ? button.dataset.backLabel : button.dataset.frontLabel;
+  });
+  setSelectedEczemaParts(selectedEczemaParts);
+}
+
+function renderSelectedEczemaParts() {
+  if (!els.eczemaPartsLabel) return;
+  const parts = [...selectedEczemaParts];
+  els.eczemaPartsLabel.textContent = parts.length ? eczemaPartLabels(parts) : "No body parts selected";
 }
 
 function saveEntries() {
@@ -1108,6 +1497,7 @@ els.tabs.forEach((button) => {
     els.views.forEach((item) => item.classList.toggle("is-active", item.dataset.view === view));
     if (view === "summary") renderSummary();
     if (view === "development") renderDevelopment();
+    if (view === "skin") renderEczema();
   });
 });
 
@@ -1147,6 +1537,48 @@ els.developmentForm.addEventListener("submit", async (event) => {
   }
 });
 
+els.eczemaForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedEczemaParts.size) {
+    renderStatus("Select a body part");
+    return;
+  }
+
+  const entry = createEczemaEntry();
+  entries.push(entry);
+  saveEntries();
+  render();
+  setSelectedEczemaParts([]);
+  els.eczemaNote.value = "";
+  els.eczemaStartDate.value = dayKey(new Date());
+
+  try {
+    const saved = await appendToSheet(entry);
+    if (saved) await syncFromSheet();
+  } catch {
+    renderStatus("Sheet save failed");
+  }
+});
+
+els.bodyRegionButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const part = eczemaPartKey(selectedEczemaSide, button.dataset.bodyPart);
+    const parts = new Set(selectedEczemaParts);
+    if (parts.has(part)) {
+      parts.delete(part);
+    } else {
+      parts.add(part);
+    }
+    setSelectedEczemaParts(parts);
+  });
+});
+
+els.bodySideButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setSelectedEczemaSide(button.dataset.bodySide);
+  });
+});
+
 els.type.addEventListener("change", () => {
   setDefaultUnit();
 });
@@ -1175,6 +1607,7 @@ els.summaryPaneButtons.forEach((button) => {
     summaryPane = button.dataset.summaryPaneButton;
     renderSummaryPanes();
     if (summaryPane === "activity") renderSummaryChart(groupByDay(sortedEntries()));
+    if (summaryPane === "eczema") renderEczemaSummary();
   });
 });
 
@@ -1204,8 +1637,11 @@ els.syncButton.addEventListener("click", () => {
 
 els.happenedAt.value = localDateTimeValue();
 els.developmentDate.value = dayKey(new Date());
+els.eczemaStartDate.value = dayKey(new Date());
 els.type.value = DEFAULT_ACTIVITY;
 setDefaultUnit();
+setSelectedEczemaSide("front");
+setSelectedEczemaParts([]);
 els.scriptUrl.value = settings.scriptUrl || "";
 els.scriptSnippet.textContent = scriptTemplate;
 configureLocalOnlyUi();
@@ -1227,6 +1663,7 @@ function defaultUnitFor(type) {
     sleep: "min",
     note: "",
     development: "",
+    eczema: "",
   };
   return defaults[type] || "";
 }
