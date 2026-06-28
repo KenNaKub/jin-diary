@@ -24,6 +24,16 @@ const ECZEMA_BODY_PARTS = [
   ["legs", "Legs"],
   ["feet", "Feet"],
 ];
+const ECZEMA_REGIONS = [
+  ["left", "left"],
+  ["right", "right"],
+];
+const ECZEMA_LATERAL_PART_LABELS = {
+  arms: "arm",
+  hands: "hand",
+  legs: "leg",
+  feet: "foot",
+};
 
 const scriptTemplate = `const SHEET_NAME = "entries";
 
@@ -299,28 +309,37 @@ function activityLabel(type) {
 }
 
 function bodyPartLabel(part) {
-  const { side, bodyPart } = parseEczemaPartKey(part);
+  const { side, region, bodyPart } = parseEczemaPartKey(part);
   const sideLabel = Object.fromEntries(ECZEMA_SIDES)[side] || side;
-  const partLabel = Object.fromEntries(ECZEMA_BODY_PARTS)[bodyPart] || bodyPart;
-  return `${sideLabel} ${partLabel.toLowerCase()}`;
+  const partLabel = region
+    ? ECZEMA_LATERAL_PART_LABELS[bodyPart] || (Object.fromEntries(ECZEMA_BODY_PARTS)[bodyPart] || bodyPart).toLowerCase()
+    : (Object.fromEntries(ECZEMA_BODY_PARTS)[bodyPart] || bodyPart).toLowerCase();
+  return [sideLabel, region, partLabel].filter(Boolean).join(" ");
 }
 
-function eczemaPartKey(side, part) {
-  return `${side}:${part}`;
+function eczemaPartKey(side, part, region = "") {
+  return region ? `${side}:${region}:${part}` : `${side}:${part}`;
 }
 
 function parseEczemaPartKey(value) {
-  const [maybeSide, maybePart] = String(value || "").split(":");
+  const pieces = String(value || "").split(":");
+  const [maybeSide, maybeRegion, maybeRegionPart] = pieces;
   const sides = new Set(ECZEMA_SIDES.map(([side]) => side));
-  if (maybePart && sides.has(maybeSide)) return { side: maybeSide, bodyPart: maybePart };
-  return { side: "front", bodyPart: String(value || "") };
+  const regions = new Set(ECZEMA_REGIONS.map(([region]) => region));
+  if (pieces.length >= 3 && sides.has(maybeSide) && regions.has(maybeRegion)) {
+    return { side: maybeSide, region: maybeRegion, bodyPart: maybeRegionPart };
+  }
+  const maybePart = pieces[1];
+  if (maybePart && sides.has(maybeSide)) return { side: maybeSide, region: "", bodyPart: maybePart };
+  return { side: "front", region: "", bodyPart: String(value || "") };
 }
 
 function isAllowedEczemaPart(value) {
-  const { side, bodyPart } = parseEczemaPartKey(value);
+  const { side, region, bodyPart } = parseEczemaPartKey(value);
   const sides = new Set(ECZEMA_SIDES.map(([item]) => item));
+  const regions = new Set(ECZEMA_REGIONS.map(([item]) => item));
   const parts = new Set(ECZEMA_BODY_PARTS.map(([item]) => item));
-  return sides.has(side) && parts.has(bodyPart);
+  return sides.has(side) && parts.has(bodyPart) && (!region || regions.has(region));
 }
 
 function dateAtMorning(date) {
@@ -1169,25 +1188,39 @@ function createDevelopmentEntry() {
   return entry;
 }
 
-function createEczemaEntry() {
+function createEczemaEntries() {
   const parts = [...selectedEczemaParts];
   const startDate = els.eczemaStartDate.value || dayKey(new Date());
-  const entry = {
-    id: crypto.randomUUID(),
-    happenedAt: dateAtMorning(startDate),
-    type: ECZEMA_TYPE,
-    amount: "",
-    unit: "",
-    note: formatEczemaNote({
-      parts,
-      endDate: "",
-      note: els.eczemaNote.value,
-    }),
-    createdAt: currentBangkokTimestamp(),
-    pendingSync: true,
-  };
-  sessionPendingEntryIds.add(entry.id);
-  return entry;
+  const note = els.eczemaNote.value;
+  return parts.map((part) => {
+    const entry = {
+      id: crypto.randomUUID(),
+      happenedAt: dateAtMorning(startDate),
+      type: ECZEMA_TYPE,
+      amount: "",
+      unit: "",
+      note: formatEczemaNote({
+        parts: [part],
+        endDate: "",
+        note,
+      }),
+      createdAt: currentBangkokTimestamp(),
+      pendingSync: true,
+    };
+    sessionPendingEntryIds.add(entry.id);
+    return entry;
+  });
+}
+
+async function saveEczemaEntriesToSheet(records) {
+  if (!settings.scriptUrl) return false;
+  renderStatus(`Saving ${records.length} ${records.length === 1 ? "symptom" : "symptoms"} to sheet...`);
+  for (const entry of records) {
+    const saved = await appendToSheet(entry, { showStatus: false });
+    if (!saved) return false;
+  }
+  renderStatus("Saved to sheet");
+  return true;
 }
 
 async function closeEczemaEntry(entry, endDate, button) {
@@ -1224,7 +1257,7 @@ async function closeEczemaEntry(entry, endDate, button) {
 function setSelectedEczemaParts(parts) {
   selectedEczemaParts = new Set(parts);
   els.bodyRegionButtons.forEach((button) => {
-    const selected = selectedEczemaParts.has(eczemaPartKey(selectedEczemaSide, button.dataset.bodyPart));
+    const selected = selectedEczemaParts.has(eczemaPartKey(selectedEczemaSide, button.dataset.bodyPart, button.dataset.bodyRegion));
     button.classList.toggle("is-selected", selected);
     button.setAttribute("aria-pressed", String(selected));
   });
@@ -1594,8 +1627,8 @@ els.eczemaForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  const entry = createEczemaEntry();
-  entries.push(entry);
+  const records = createEczemaEntries();
+  entries.push(...records);
   saveEntries();
   render();
   setSelectedEczemaParts([]);
@@ -1603,7 +1636,7 @@ els.eczemaForm.addEventListener("submit", async (event) => {
   els.eczemaStartDate.value = dayKey(new Date());
 
   try {
-    const saved = await appendToSheet(entry);
+    const saved = await saveEczemaEntriesToSheet(records);
     if (saved) await syncFromSheet();
   } catch {
     renderStatus("Sheet save failed");
@@ -1612,7 +1645,7 @@ els.eczemaForm.addEventListener("submit", async (event) => {
 
 els.bodyRegionButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    const part = eczemaPartKey(selectedEczemaSide, button.dataset.bodyPart);
+    const part = eczemaPartKey(selectedEczemaSide, button.dataset.bodyPart, button.dataset.bodyRegion);
     const parts = new Set(selectedEczemaParts);
     if (parts.has(part)) {
       parts.delete(part);
