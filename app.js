@@ -146,6 +146,7 @@ let summaryPane = "activity";
 let selectedEczemaParts = new Set();
 let selectedEczemaSide = "front";
 const sessionPendingEntryIds = new Set();
+const recentSheetWrites = new Map();
 
 const els = {
   tabs: document.querySelectorAll("[data-view-button]"),
@@ -1357,9 +1358,20 @@ async function appendToSheet(entry, options = {}) {
   if (options.showStatus !== false) renderStatus("Saving to sheet...");
   const payload = await jsonp("append", { entry: JSON.stringify(entry) });
   const saved = payload.ok && payload.entry?.id === entry.id;
-  if (saved) markEntrySynced(entry.id);
+  if (saved) {
+    rememberRecentSheetWrite(payload.entry);
+    markEntrySynced(entry.id);
+  }
   if (options.showStatus !== false) renderStatus(saved ? "Saved to sheet" : "Sheet save failed");
   return saved;
+}
+
+function rememberRecentSheetWrite(entry) {
+  if (!entry?.id) return;
+  recentSheetWrites.set(String(entry.id), {
+    entry: normalizeEntry(entry),
+    expiresAt: Date.now() + 60000,
+  });
 }
 
 function markEntrySynced(id) {
@@ -1390,7 +1402,7 @@ async function syncFromSheet() {
   if (payload.ok && Array.isArray(payload.entries)) {
     const rawSheetEntries = dedupeEntries(payload.entries.map(normalizeEntry));
     forgetDeletedEntries(rawSheetEntries.map((entry) => entry.id).filter(Boolean));
-    const sheetEntries = rawSheetEntries.filter((entry) => !isDeletedEntry(entry));
+    const sheetEntries = applyRecentSheetWrites(rawSheetEntries.filter((entry) => !isDeletedEntry(entry)));
     const sheetIds = new Set(sheetEntries.map((entry) => entry.id));
     const localOnlyEntries = entries.filter(
       (entry) => entry.pendingSync && entry.id && sessionPendingEntryIds.has(entry.id) && !sheetIds.has(entry.id)
@@ -1415,7 +1427,7 @@ async function syncFromSheet() {
 
       const refreshedEntries = dedupeEntries(refreshed.entries.map(normalizeEntry));
       forgetDeletedEntries(refreshedEntries.map((entry) => entry.id).filter(Boolean));
-      entries = refreshedEntries.filter((entry) => !isDeletedEntry(entry));
+      entries = applyRecentSheetWrites(refreshedEntries.filter((entry) => !isDeletedEntry(entry)));
     } else {
       entries = sheetEntries;
     }
@@ -1440,6 +1452,44 @@ function normalizeEntry(entry) {
     note: entry.note || "",
     pendingSync: false,
   };
+}
+
+function applyRecentSheetWrites(sheetEntries) {
+  const now = Date.now();
+  const mergedEntries = [...sheetEntries];
+  const indexById = new Map(mergedEntries.map((entry, index) => [String(entry.id), index]));
+
+  recentSheetWrites.forEach((write, id) => {
+    if (write.expiresAt <= now) {
+      recentSheetWrites.delete(id);
+      return;
+    }
+
+    const index = indexById.get(id);
+    if (index == null) {
+      mergedEntries.push(write.entry);
+      return;
+    }
+
+    if (entriesHaveSameSheetValues(mergedEntries[index], write.entry)) {
+      recentSheetWrites.delete(id);
+    } else {
+      mergedEntries[index] = write.entry;
+    }
+  });
+
+  return dedupeEntries(mergedEntries);
+}
+
+function entriesHaveSameSheetValues(a, b) {
+  return (
+    String(a.id) === String(b.id) &&
+    a.happenedAt === b.happenedAt &&
+    a.type === b.type &&
+    a.amount === b.amount &&
+    a.unit === b.unit &&
+    a.note === b.note
+  );
 }
 
 function dedupeEntries(items) {
